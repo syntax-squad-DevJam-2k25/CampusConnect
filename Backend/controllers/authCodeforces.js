@@ -1,63 +1,90 @@
-
-const {JSDOM} = require("jsdom");
+const { JSDOM } = require("jsdom");
 const axios = require("axios");
-const User = require('./../models/User');
+const User = require("./../models/User");
 
-
-
-//function to get DOM node represented by the given xpath
-function getElementByXpath(document, path) {
-    return document.evaluate(path, document, null, 9, null).singleNodeValue;
+function getText(document, selector) {
+  return document.querySelector(selector)?.textContent?.trim() || "";
 }
 
+exports.getUserDetails = async (req, res) => {
+  try {
+    const { id } = req.body;
+  console.log(id);
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
 
-//function to return user info else than heatmap
-exports.getUserDetails = async (req, res, next) => {
-    try{
-       
-       const id = req.body.id;
-        const user = await User.findById(id);
-        const username = user.codeforcesUsername;
+    const user = await User.findById(id);
+    if (!user || !user.codeforcesUsername) {
+      return res.status(404).json({
+        success: false,
+        message: "Codeforces username not found",
+      });
+    }
 
-
-        console.log("codeforces: "+username)
-
+    const username = user.codeforcesUsername;
     const profileLink = `https://codeforces.com/profile/${username}`;
 
-    const requestOptions = {
-        method: "GET",
-        redirect: "follow"
-      };
-      
-    const r = await fetch(profileLink, requestOptions);
-    const response = await r.text();
+    /* ------------------ 1️⃣ FETCH USER INFO (API) ------------------ */
+    const infoRes = await axios.get(
+      `https://codeforces.com/api/user.info?handles=${username}`
+    );
 
-    const dom = new JSDOM(response);
+    if (infoRes.data.status !== "OK") {
+      throw new Error("Invalid Codeforces user");
+    }
+
+    const cf = infoRes.data.result[0];
+
+    /* ------------------ 2️⃣ FETCH SUBMISSIONS (API) ------------------ */
+    const statusRes = await axios.get(
+      `https://codeforces.com/api/user.status?handle=${username}`
+    );
+
+    const submissions =
+      statusRes.data.status === "OK"
+        ? statusRes.data.result.length
+        : 0;
+
+    /* ------------------ 3️⃣ OPTIONAL: SCRAPE STREAK ------------------ */
+    const htmlRes = await axios.get(profileLink, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
+    });
+
+    const dom = new JSDOM(htmlRes.data);
     const document = dom.window.document;
 
-    const handler = getElementByXpath(document, "//*[@id=\"pageContent\"]/div[2]/div/div[2]/div/h1/a").textContent;
+    const streakText = getText(document, ".heatmap div span");
+    const streak = streakText.replace(/\D/g, "") || "0";
 
-    let rank = getElementByXpath(document, "//*[@id=\"pageContent\"]/div[2]/div/div[2]/ul/li[1]").textContent;
-    const regex = /Contest rating:\s+(\d+)/s;
-    const match = rank.match(regex);
-    rank = match ? match[1] : 0;
-
-    const streak = getElementByXpath(document, "//*[@id=\"pageContent\"]/div[4]/div/div[3]/div[2]/div[1]/div[1]").textContent.replace(/\D/g, "") || 0;
-    const submissionCount = [{
-        difficulty: "All",
-        count: getElementByXpath(document, "//*[@id=\"pageContent\"]/div[4]/div/div[3]/div[1]/div[1]/div[1]").textContent.replace(/\D/g, "") || 0
-    }];
-
-
-    const title = getElementByXpath(document, "//*[@id=\"pageContent\"]/div[2]/div/div[2]/div/div[1]/span").textContent;
-
-    res.status(200).json({
-        status: 'success', data: {
-            platformName: "CODEFORCES", profileLink, handler, rank, streak, submissionCount, title
-        }
-    })
-} catch(e){
-    console.log(e);
-}
+    /* ------------------ RESPONSE ------------------ */
+    return res.status(200).json({
+      success: true,
+      data: {
+        handler: cf.handle,
+        rank: cf.rating || 0,
+        title: cf.rank || "Unrated",
+        streak: Number(streak),
+        submissionCount: [
+          {
+            difficulty: "All",
+            count: submissions, // ✅ CORRECT
+          },
+        ],
+        profileLink,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Codeforces error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch Codeforces data",
+    });
+  }
 };
-

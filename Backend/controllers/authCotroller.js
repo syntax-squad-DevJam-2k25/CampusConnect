@@ -13,36 +13,77 @@ const generateToken = (user) => {
 // Register User
 
 exports.register = async (req, res) => {
-    try {
-        const { name, gemail, email, password, confirmPassword, branch } = req.body;
+  try {
+    const { name, gemail, email, password, confirmPassword, branch } = req.body;
 
-        if(!gemail.endsWith("@mnnit.ac.in"))
-        {
-            return res.status(400).json({ message: "Gsuite mail must be a valid MNNIT email (e.g., example@mnnit.ac.in" });
-        }
-        
-        if (!email.endsWith("@gmail.com") && !email.endsWith("@hotmail.com")) {
-            return res.status(400).json({ message: "Email must be a valid Gmail or Hotmail address" });
-        }
-
-        if (password !== confirmPassword) {
-            return res.status(400).json({ message: "Passwords do not match." });
-        }
-
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: "User already exists." });
-        }
- 
-        const newUser = new User({ name, gemail, email, password, branch });
-        await newUser.save();
-
-        const token = generateToken(newUser);
-        res.status(201).json({ message: "User registered successfully", token });
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+    // ✅ Required fields for FORM registration
+    if (!gemail || !password || !confirmPassword) {
+      return res.status(400).json({
+        message: "Gemail and password are required"
+      });
     }
+
+    // ✅ College email validation
+    if (!gemail.endsWith("@mnnit.ac.in")) {
+      return res.status(400).json({
+        message: "Gsuite mail must be a valid MNNIT email"
+      });
+    }
+
+    // ✅ Personal email validation
+    if (
+      !email.endsWith("@gmail.com") &&
+      !email.endsWith("@hotmail.com")
+    ) {
+      return res.status(400).json({
+        message: "Email must be a valid Gmail or Hotmail address"
+      });
+    }
+
+    // ✅ Password match
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        message: "Passwords do not match"
+      });
+    }
+
+    // ✅ Check existing user
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(400).json({
+        message: "User already exists"
+      });
+    }
+
+    // ✅ Create LOCAL user
+    const newUser = new User({
+      name,
+      gemail,
+      email,
+      password,
+      branch,
+      authProvider: "local"
+    });
+
+    await newUser.save();
+
+    const token = generateToken(newUser);
+
+    res.status(201).json({
+      message: "User registered successfully",
+      token,
+      user: newUser
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
 };
+
 
 // Login User
 exports.login = async (req, res) => {

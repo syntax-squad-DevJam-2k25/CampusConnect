@@ -61,42 +61,77 @@ const UserProfileCard = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage("");
+  e.preventDefault();
+  setMessage("");
 
-    const token = localStorage.getItem("token");
-
-    if(userData.codeforcesId !== "NA"){
-      await fetch("http://localhost:5001/api/user/update-profile", {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`  
-        },
-        body: JSON.stringify({
-            codeforcesUsername: userData.codeforcesId,
-            year: userData.year
-        })
-      });
-      setMessage("Codeforces data saved successfully.");
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setMessage("User not authenticated");
+    return;
   }
-  
-    if(userData.leetcodeId === "NA") return;
-    await fetch("http://localhost:5001/api/user/update-leetcode", {
-      method: "PUT",
-      headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`  
-      },
-      body: JSON.stringify({
-        leetcodeUsername: userData.leetcodeId,
-      })
-    });
 
-    setMessage(message+" Leetcode Data updated Succesfully.");
+  try {
+    /* ================= CODEFORCES UPDATE ================= */
+    if (userData.codeforcesId && userData.codeforcesId !== "NA") {
+      if (!userData.year) {
+        setMessage("Please select year before saving Codeforces ID");
+        return;
+      }
 
-    console.log("User Data Submitted:", userData);
-  };
+      const res1 = await fetch(
+        "http://localhost:5001/api/user/update-profile",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            codeforcesUsername: userData.codeforcesId,
+            year: userData.year,
+          }),
+        }
+      );
+
+      const data1 = await res1.json();
+      if (!res1.ok) {
+        setMessage(data1.message || "Codeforces update failed");
+        return;
+      }
+
+      setMessage("Codeforces data saved successfully. ");
+    }
+
+    /* ================= LEETCODE UPDATE ================= */
+    if (userData.leetcodeId && userData.leetcodeId !== "NA") {
+      const res2 = await fetch(
+        "http://localhost:5001/api/user/update-leetcode",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            leetcodeUsername: userData.leetcodeId,
+          }),
+        }
+      );
+
+      const data2 = await res2.json();
+      if (!res2.ok) {
+        setMessage((prev) => prev + (data2.message || "Leetcode update failed"));
+        return;
+      }
+
+      setMessage((prev) => prev + "Leetcode data updated successfully.");
+    }
+  } catch (err) {
+    console.error(err);
+    setMessage("Something went wrong. Try again.");
+  }
+};
+
 
   return (
     <div className="card">

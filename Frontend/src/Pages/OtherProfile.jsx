@@ -11,32 +11,42 @@ function OtherProfile() {
     const [codeforcesData, setCodeforcesData] = useState(null);
      const [loading, setLoading] = useState(true); // ✅ loader state
 
-    useEffect(() => {
-        const fetchData = async (url, setter) => {
-            try {
+  useEffect(() => {
+  const fetchData = async (url, setter, platform) => {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
 
-                
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ id }),
-                });
+      if (!response.ok)
+        throw new Error(`Failed to fetch ${platform} data`);
 
-                if (!response.ok) throw new Error(`Failed to fetch ${platform} data`);
+      const data = await response.json();
+      setter(data.data || null);
+    } catch (error) {
+      console.error(`Error fetching ${platform} data:`, error);
+      setter(null);
+    }
+  };
 
-                const data = await response.json();
-                setter(data.data || null); 
-            } catch (error) {
-                console.error(`Error fetching ${platform} data:`, error);
-                setter(null);
-            }
-        };
+  fetchData(
+    "http://localhost:5001/api/user/leetcode",
+    setLeetcodeData,
+    "LeetCode"
+  );
 
-        fetchData("http://localhost:5001/api/user/leetcode", setLeetcodeData, "LeetCode");
-        fetchData("http://localhost:5001/api/codeforces/getCodeforcesData", setCodeforcesData, "Codeforces");
-    }, [id]);
+  fetchData(
+    "http://localhost:5001/api/codeforces/getCodeforcesData",
+    setCodeforcesData,
+    "Codeforces"
+  );
+
+  setLoading(false);
+}, [id]);
 
         if (loading) {
         return <LoadingPage />; // ✅ Show loader until both APIs finish

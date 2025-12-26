@@ -138,13 +138,9 @@ function Login() {
       id="container"
     >
       <ToastContainer position="top-right" autoClose={2000} />
-
-      {/* ================= SIGN UP ================= */}
-      <div
-        className={`form-container sign-up-container ${
-          isSignInActive ? "hidden" : ""
-        }`}
-      >
+      
+      {/* Sign Up Form */}
+      <div className={`form-container sign-up-container ${isSignInActive ? "hidden" : ""}`}>
         <form onSubmit={handleRegister}>
           <h1>Create Account</h1>
 
@@ -211,12 +207,8 @@ function Login() {
         </button>
       </div>
 
-      {/* ================= SIGN IN ================= */}
-      <div
-        className={`form-container sign-in-container ${
-          isSignInActive ? "" : "hidden"
-        }`}
-      >
+      {/* Sign In Form */}
+      <div className={`form-container sign-in-container ${isSignInActive ? "" : "hidden"}`}>
         <form onSubmit={handleLogin}>
           <h1>Login</h1>
 
@@ -252,7 +244,7 @@ function Login() {
         </button>
       </div>
 
-      {/* ================= OVERLAY ================= */}
+      {/* Overlay Section */}
       <div className="overlay-container">
         <div className="overlay">
           <div className="overlay-panel overlay-left">

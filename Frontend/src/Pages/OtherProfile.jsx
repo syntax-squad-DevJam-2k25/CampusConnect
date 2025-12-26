@@ -3,15 +3,19 @@ import { useParams } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./OtherProfile.css"; 
+import LoadingPage from "../Components/LoadingPage"; // ✅ Import loader
 
 function OtherProfile() {
     const { id } = useParams();
     const [leetcodeData, setLeetcodeData] = useState(null);
     const [codeforcesData, setCodeforcesData] = useState(null);
+     const [loading, setLoading] = useState(true); // ✅ loader state
 
     useEffect(() => {
-        const fetchData = async (url, setter, platform) => {
+        const fetchData = async (url, setter) => {
             try {
+
+                
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
@@ -24,11 +28,9 @@ function OtherProfile() {
 
                 const data = await response.json();
                 setter(data.data || null); 
-                toast.success(`${platform} data loaded successfully!`);  // 🎉 Success toast
             } catch (error) {
                 console.error(`Error fetching ${platform} data:`, error);
                 setter(null);
-                toast.error(`Error loading ${platform} data. Try again later.`);  // ❌ Error toast
             }
         };
 
@@ -36,22 +38,26 @@ function OtherProfile() {
         fetchData("http://localhost:5001/api/codeforces/getCodeforcesData", setCodeforcesData, "Codeforces");
     }, [id]);
 
+        if (loading) {
+        return <LoadingPage />; // ✅ Show loader until both APIs finish
+    }
+
     return (
         <div>
-            <ToastContainer position="top-right" autoClose={3000} hideProgressBar />  {/* 🎉 Toast notifications */}
-            <h1>Coding Profile</h1>    
-            <div className="profile-container">
-                
-                {/* LeetCode Section */}
-                {leetcodeData ? (
-                    <div className="platform-card leetcode">
-                        <h2>LeetCode Profile</h2>
-                        <p><strong>Username:</strong> {leetcodeData.handler || "N/A"}</p>
-                        <p><strong>Rank:</strong> {leetcodeData.rank || "N/A"}</p>
-                        <p><strong>Rating:</strong> {leetcodeData.rating ? leetcodeData.rating.toFixed(2) : "N/A"}</p>
-                        <p><strong>Streak:</strong> {leetcodeData.streak || "N/A"} days</p>
-                        <p><strong>Languages Used:</strong> {leetcodeData.languagesUsed?.join(", ") || "N/A"}</p>
-                        <p><a href={leetcodeData.profileLink} target="_blank" rel="noopener noreferrer">View Profile</a></p>
+            <h1 >Coding Profile</h1>    
+        <div className="profile-container">
+            
+
+            {/* LeetCode Section */}
+            {leetcodeData ? (
+                <div className="platform-card leetcode">
+                    <h2>LeetCode Profile</h2>
+                    <p><strong>Username:</strong> {leetcodeData.handler || "N/A"}</p>
+                    <p><strong>Rank:</strong> {leetcodeData.rank || "N/A"}</p>
+                    <p><strong>Rating:</strong> {leetcodeData.rating ? leetcodeData.rating.toFixed(2) : "N/A"}</p>
+                    <p><strong>Streak:</strong> {leetcodeData.streak || "N/A"} days</p>
+                    <p><strong>Languages Used:</strong> {leetcodeData.languagesUsed?.join(", ") || "N/A"}</p>
+                    <p><a href={leetcodeData.profileLink} target="_blank" rel="noopener noreferrer">View Profile</a></p>
 
                         <h3>Submissions:</h3>
                         <ul>

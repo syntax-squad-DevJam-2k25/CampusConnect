@@ -8,17 +8,17 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     gemail: {
-        type: String,
-        required: true,
-        unique: true,
-        validate: {
-            validator: function (email) {
-                return email.endsWith("@mnnit.ac.in");
-            },
-            
-            message: "Gemail must be a valid MNNIT email (e.g., example@mnnit.ac.in)."
-        }
+  type: String,
+  unique: true,
+  sparse: true, // ⭐ IMPORTANT
+  validate: {
+    validator: function (email) {
+      if (!email) return true; // allow null
+      return email.endsWith("@mnnit.ac.in");
     },
+    message: "Gemail must be a valid MNNIT email"
+  }
+},
     email: {
         type: String,
         required: true,
@@ -27,14 +27,17 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
         minlength: 6
     },
     branch: {
         type: String,
-        required: true
+        default:null
     },
-
+          authProvider: {
+  type: String,
+  enum: ["local", "google"],
+  default: "local"
+},
      // (Optional)
      codeforcesUsername : {
         type: String,

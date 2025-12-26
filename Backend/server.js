@@ -1,43 +1,47 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
+const cors = require("cors");
+
 const authRoutes = require("./routes/authRoutes.js");
 const userRouter = require('./controllers/userController.js');
 const codeforcesRouter = require('./routes/routeCodeforces.js');
 const chatRouter = require('./controllers/chatController');
 const messageRouter = require('./controllers/messageController');
-const cors=require("cors");
 
+dotenv.config();
 const app = express();
-require('dotenv').config();
-const PORT = process.env.PORT || 5000;
-app.use(bodyParser.json());
-app.use(cors(
-   {
-      origin: "http://localhost:3000", 
-      methods: "GET,POST,PUT,DELETE",
-      allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
-    }
-));
-// Routes 
-app.use("/api/auth", authRoutes);
+const PORT = process.env.PORT || 5001;
 
-// routes for user log access
+/* ✅ MIDDLEWARE (MUST BE FIRST) */
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}));
+
+app.use(express.json()); // body parser
+app.use(bodyParser.json());
+
+/* ✅ DEBUG LOGGER */
+app.use((req, res, next) => {
+  console.log("➡️ Incoming Request:", req.method, req.url);
+  next();
+});
+
+/* ✅ ROUTES */
+app.use("/api/auth", authRoutes);
 app.use('/api/user', userRouter);
 app.use('/api/codeforces', codeforcesRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/message', messageRouter);
 
+/* ✅ DB */
+mongoose.connect(process.env.MONGO_URL)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error(err));
 
-mongoose.connect(process.env.MONGO_URL, {
-}).then(() => console.log("MongoDB connected"))
-.catch( err =>
-   console.error(err)
-);
-
-
-
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+/* ✅ SERVER */
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

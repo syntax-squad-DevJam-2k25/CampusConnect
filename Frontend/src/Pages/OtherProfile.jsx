@@ -12,16 +12,6 @@ function OtherProfile() {
      const [loading, setLoading] = useState(true); // ✅ loader state
 
     useEffect(() => {
-
-        let completedRequests = 0;
-
-        const checkIfDone = () => {
-            completedRequests += 1;
-            if (completedRequests === 2) {
-                setLoading(false); // ✅ Hide loader after both fetches finish
-            }
-        };
-
         const fetchData = async (url, setter, platform) => {
             try {
 
@@ -38,13 +28,11 @@ function OtherProfile() {
 
                 const data = await response.json();
                 setter(data.data || null); 
-                toast.success(`${platform} data loaded successfully!`);  
+                toast.success(`${platform} data loaded successfully!`);  // 🎉 Success toast
             } catch (error) {
                 console.error(`Error fetching ${platform} data:`, error);
                 setter(null);
-                toast.error(`Error loading ${platform} data. Try again later.`);  
-            }finally {
-                checkIfDone(); // ✅ Count completed request
+                toast.error(`Error loading ${platform} data. Try again later.`);  // ❌ Error toast
             }
         };
 
@@ -58,7 +46,7 @@ function OtherProfile() {
 
     return (
         <div>
-            <ToastContainer position="top-right" autoClose={3000} hideProgressBar />  
+            <ToastContainer position="top-right" autoClose={3000} hideProgressBar />  {/* 🎉 Toast notifications */}
             <h1>Coding Profile</h1>    
             <div className="profile-container">
                 

@@ -3,10 +3,7 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema({
-    name: {
-        type: String, 
-        required: true
-    },
+    name: {  type: String, required: true },
     gemail: {
   type: String,
   unique: true,
@@ -33,15 +30,29 @@ const userSchema = new mongoose.Schema({
         type: String,
         default:null
     },
-          authProvider: {
+  college: { type: String, default: null },
+authProvider: {
   type: String,
   enum: ["local", "google"],
   default: "local"
 },
+ profileImage: {
+    type: String, // Cloudinary URL
+    default: null,
+  },
+
+  resumeUrl: {
+    type: String, // Cloudinary PDF URL
+    default: null,
+  },
+
+  /* ================= SOCIAL LINKS ================= */
+  github: { type: String, default: null },
+  linkedin: { type: String, default: null },
      // (Optional)
      codeforcesUsername : {
         type: String,
-        unique: true,  
+      
         sparse: true   
     },
    
@@ -52,7 +63,7 @@ const userSchema = new mongoose.Schema({
     // LeetCode Info
     leetcodeUsername: {
         type: String,
-        unique: true,
+    
         sparse: true
     },
     leetcodeRating: {
@@ -62,7 +73,14 @@ const userSchema = new mongoose.Schema({
     year: {
         type: Number,  
         default: null   
-    }
+    },
+  
+ skills: [
+    {
+      type: String,
+    },
+  ],
+
 
 },{timestamps : true} );
 

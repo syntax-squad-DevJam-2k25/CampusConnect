@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-//console.log("BACKEND GOOGLE CLIENT ID =>", process.env.GOOGLE_CLIENT_ID);
+
 
 export const googleRegister = async (req, res) => {
   try {

@@ -1,9 +1,11 @@
-const express = require("express");
-const { register, login } = require("../controllers/chatControllers.js");
-// const { createNewChat } = require("../../Frontend/src/chatApiCalls/chat.js");
+const router = require("express").Router();
+const authMiddleware = require("../middleware/authMiddleware");
+const {
+  createNewChat,
+  getAllChats,
+} = require("../controllers/chatController");
 
-const router = express.Router();
-router.post("/create-new-chat", createNewChat);
-router.post("/get-all-chats", getAllChats);
+router.post("/create-new-chat", authMiddleware, createNewChat);
+router.get("/get-all-chats", authMiddleware, getAllChats);
 
 module.exports = router;

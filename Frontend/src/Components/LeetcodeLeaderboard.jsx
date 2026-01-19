@@ -3,8 +3,6 @@ import "./Sidebar.css";
 import { Link } from "react-router-dom";
 
 const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
-  console.log("Selected Filters:", selectedCourse, selectedYear);
-
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,24 +10,34 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
   useEffect(() => {
     const fetchRatings = async () => {
       try {
-        const token = localStorage.getItem("token");  
-        const response = await fetch("http://localhost:5001/api/user/get-all-users", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Unauthorized");
+
+        const response = await fetch(
+          "http://localhost:5001/api/users/get-all-users",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed with status ${response.status}`);
+        }
 
         const data = await response.json();
+        console.log("Fetched users data:", data);
 
-        if (data.success) {
-          setUsers(data.data);
-        } else {
-          throw new Error("Failed to fetch data");
+        if (!data.success) {
+          throw new Error("API returned failure");
         }
-      } catch (error) {
-        setError(error.message);
+
+        setUsers(data.data);
+      } catch (err) {
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -41,19 +49,23 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
-  console.log("All Users:", users);
-
   const filteredUsers = users.filter((user) => {
-    const courseMatch = selectedCourse === "All" || user.branch === selectedCourse;
-    const yearMatch = selectedYear === "All" || user.year?.toString() === selectedYear;
+    const courseMatch =
+      selectedCourse === "All" || user.branch === selectedCourse;
+    const yearMatch =
+      selectedYear === "All" || user.year?.toString() === selectedYear;
     return courseMatch && yearMatch;
   });
 
-  console.log("Filtered Users:", filteredUsers);
+  const sortedUsers = [...filteredUsers].sort(
+    (a, b) => (b.leetcodeRating || 0) - (a.leetcodeRating || 0)
+  );
 
   return (
     <div className="leaderboard-container">
+       
       <table className="leaderboard-table">
+       
         <thead>
           <tr>
             <th>Rank</th>
@@ -64,25 +76,19 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
           </tr>
         </thead>
         <tbody>
-          {filteredUsers
-            .sort((a, b) => b.leetcodeRating - a.leetcodeRating)
-            .map((user, index) => (
-              <tr key={user._id}>
-                <td id="rank">{index + 1}</td>
-                <td >
-                  <Link
-                  to={`/u/${user._id}`}
-                    rel="noopener noreferrer"
-                    className="leaderboard-link"
-                  >
-                    {user.name}
-                  </Link>
-                </td>
-                <td>{user.branch}</td>
-                <td>{user.year || "NA"}</td>
-                <td>{user.leetcodeRating || "NA"}</td>
-              </tr>
-            ))}
+          {sortedUsers.map((user, index) => (
+            <tr key={user._id}>
+              <td id="rank">{index + 1}</td>
+              <td>
+                <Link to={`/u/${user._id}`} className="leaderboard-link">
+                  {user.name}
+                </Link>
+              </td>
+              <td>{user.branch}</td>
+              <td>{user.year || "NA"}</td>
+              <td>{user.leetcodeRating || "NA"}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

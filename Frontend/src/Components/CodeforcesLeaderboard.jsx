@@ -13,7 +13,7 @@ const CodeforcesLeaderboard = ({ selectedCourse, selectedYear }) => {
     const fetchRatings = async () => {
       try {
         const token = localStorage.getItem("token");  
-        const response = await fetch("http://localhost:5001/api/user/get-all-users", {
+        const response = await fetch("http://localhost:5001/api/users/get-all-users", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

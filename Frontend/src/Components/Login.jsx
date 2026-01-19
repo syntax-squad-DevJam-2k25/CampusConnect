@@ -13,11 +13,9 @@ import axios from "axios";
 function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const [isSignInActive, setIsSignInActive] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [registerData, setRegisterData] = useState({
     name: "",
     gemail: "",
@@ -26,7 +24,6 @@ function Login() {
     confirmPassword: "",
     branch: "",
   });
-
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
@@ -75,37 +72,83 @@ function Login() {
     }
   };
 
-  /* ================= LOCAL LOGIN ================= */
-  const handleLogin = async (e) => {
-    e.preventDefault();
 
-    try {
-      const response = await fetch("http://localhost:5001/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData),
-      });
 
-      const data = await response.json();
+  
+const handleLogin = async (e) => {
+  e.preventDefault();
+  console.log("🔥 handleLogin triggered with loginData:", loginData);
 
-      if (response.ok) {
-        localStorage.setItem("token", data.token);
+  try {
+    // ----------------- STEP 1: Send login request -----------------
+    console.log("🔹 Sending login request...");
+    const response = await fetch("http://localhost:5001/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(loginData),
+    });
 
-        dispatch(loginSuccess(data.user));
+    console.log("🔹 Login response status:", response.status);
+    const data = await response.json();
+    console.log("🔹 Login response body:", data);
 
-        const userData = await getLoggedUser(dispatch);
-        dispatch(setUser(userData));
+    if (response.ok) {
+      console.log("✅ Login successful");
 
-        toast.success("Login successful!");
-        navigate("/home");
-      } else {
-        toast.error(data.message || "Login failed");
+      // ----------------- STEP 2: Save token -----------------
+      localStorage.setItem("token", data.token);
+      console.log("🔹 Token saved to localStorage");
+
+      // ----------------- STEP 3: Fetch full logged user info -----------------
+      try {
+        console.log("🔹 Fetching full logged user info...");
+        const userData = await getLoggedUser(); // safe API call
+        console.log("🔹 getLoggedUser returned:", userData);
+
+        // ----------------- STEP 4: Dispatch Redux safely -----------------
+        if (userData?.user) {
+          dispatch(loginSuccess(userData.user)); // ✅ only dispatch real user
+        }
+
+        dispatch(
+          setUser({
+            user: userData?.user || null,
+            errorMessage: userData?.errorMessage || null,
+          })
+        );
+        console.log("🔹 Redux setUser dispatched successfully");
+      } catch (err) {
+        console.error("❌ Error fetching logged user:", err);
+
+        dispatch(
+          setUser({
+            user: null,
+            errorMessage: err.message || "Failed to fetch user",
+          })
+        );
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong");
+    } else {
+      console.warn("⚠️ Login failed, dispatching error to Redux");
+
+      dispatch(
+        setUser({
+          user: null,
+          errorMessage: data.message || "Login failed",
+        })
+      );
     }
-  };
+  } catch (error) {
+    console.error("❌ handleLogin catch error:", error);
+
+    dispatch(
+      setUser({
+        user: null,
+        errorMessage: error.message || "Something went wrong",
+      })
+    );
+  }
+};
+
 
   /* ================= GOOGLE AUTH ================= */
   const handleGoogleAuth = async (credentialResponse) => {
@@ -137,6 +180,7 @@ function Login() {
       }`}
       id="container"
     >
+        
       <ToastContainer position="top-right" autoClose={2000} />
       
       {/* Sign Up Form */}

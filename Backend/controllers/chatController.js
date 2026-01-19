@@ -1,47 +1,35 @@
-const router = require('express').Router();
-const authMiddleware = require('../middleware/authMiddleware');
-const Chat = require('./../models/chat');
+const Chat = require("../models/chat");
 
-router.post('/create-new-chat' , authMiddleware , async (req, res) => {
-    try {
+exports.createNewChat = async (req, res) => {
+  try {
+    const chat = new Chat(req.body);
+    const savedChat = await chat.save();
 
-        const chat = new Chat( req.body );
-        const savedChat = await chat.save();
+    res.status(201).json({
+      success: true,
+      message: "Chat created successfully",
+      data: savedChat,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
 
-        res.status(201).send({
-            message: 'Chat created successfully',
-            success :true,
-            data: savedChat
-        })
+exports.getAllChats = async (req, res) => {
+  try {
+    const chats = await Chat.find({
+      members: { $in: req.user.userId },
+    })
+      .populate("members")
+      .populate("lastMessage")
+      .sort({ updatedAt: -1 });
 
-    }catch (error){
-        res.status(400).send({
-            message :error.message, 
-            success : false
-        })
-    }
-});
-
-router.get('/get-all-chats' , authMiddleware , async (req, res) => {
-    try {
-        console.log("id" +req.user.userId);
-        const allChats = await  Chat.find({ members : { $in : req.user.userId } }).populate('members').populate('lastMessage').sort({ updatedAt : -1});
-                                                        // 
-                                                        // 
-                                                        //
-        
-        res.status(200).send({
-            message: 'all chats fetched successfully',
-            success :true,
-            data: allChats
-        })
-
-    }catch (error){
-        res.status(400).send({
-            message :error.message, 
-            success : false
-        })
-    }
-})
-
-module.exports =  router;
+    res.status(200).json({
+      success: true,
+      message: "Chats fetched",
+      data: chats,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};

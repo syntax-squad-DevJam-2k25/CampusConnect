@@ -16,8 +16,6 @@ router.get(
   "/get-all-users",
   authMiddleware,
   (req, res, next) => {
-    console.log("🟢 [ROUTE] GET /get-all-users hit");
-    console.log("🟢 [ROUTE] User from token:", req.user);
     next();
   },
   userController.getAllUsers
@@ -25,17 +23,9 @@ router.get(
 
 router.put(
   "/update-profile",
-
-  // 🔐 Auth middleware debug
-  (req, res, next) => {
-    console.log("➡️ [ROUTE] PUT /update-profile hit");
-    next();
-  },
-
   authMiddleware,
 
   (req, res, next) => {
-    console.log("✅ [AUTH] User from token:", req.user);
     next();
   },
 
@@ -57,22 +47,22 @@ router.put(
 router.put(
   "/update-leetcode",
   authMiddleware,
-  
- 
+
+
   userController.updateLeetcode
 );
 
 router.post(
   "/leetcode",
   authMiddleware,
-   
+
   userController.getLeetcodeProfile
 );
 
 router.post(
   "/leetcode2",
   authMiddleware,
-   
+
   userController.getLeetcodeProfile2
 );
 

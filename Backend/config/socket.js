@@ -20,7 +20,20 @@ const initSocket = (server) => {
     socket.on("send-message", (data) => {
       io.to(data.chatId).emit("receive-message", data);
     });
+  // EDIT MESSAGE
+  socket.on("edit-message", ({ chatId, messageId, newText }) => {
+    io.to(chatId).emit("message-edited", {
+      chatId,
+      messageId,
+      newText,
+    });
+  });
 
+    // DELETE CHAT
+  socket.on("delete-chat", ({ chatId }) => {
+    io.to(chatId).emit("chat-deleted", { chatId });
+  });
+  
     socket.on("disconnect", () => {
       console.log("Socket disconnected:", socket.id);
     });

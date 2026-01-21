@@ -9,6 +9,8 @@ function OtherProfile() {
 
   const [leetcodeData, setLeetcodeData] = useState(null);
   const [codeforcesData, setCodeforcesData] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,7 +22,7 @@ function OtherProfile() {
 
     const fetchData = async (url, setter) => {
       try {
-        const response = await fetch(url, {
+        const res = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -29,15 +31,49 @@ function OtherProfile() {
           body: JSON.stringify({ id }),
         });
 
-        if (!response.ok) throw new Error("API Error");
+        if (!res.ok) throw new Error("API Error");
 
-        const data = await response.json();
+        const data = await res.json();
         setter(data.data || null);
       } catch (err) {
         console.error(err);
         setter(null);
       }
     };
+
+   const fetchUserProfile = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      "http://localhost:5001/api/users/get-all-users",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) throw new Error("Failed to fetch users");
+
+    const data = await res.json();
+
+    console.log("ALL USERS:", data); // 👈 DEBUG
+
+    // ✅ Find user by ID
+    const foundUser = data.data.find((user) => user._id === id);
+
+    console.log("FOUND USER:", foundUser); // 👈 DEBUG
+
+    setUserProfile(foundUser || null);
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    setUserProfile(null);
+  }
+};
+
+    
 
     const fetchAll = async () => {
       try {
@@ -50,9 +86,10 @@ function OtherProfile() {
             "http://localhost:5001/api/codeforces/getCodeforcesData2",
             setCodeforcesData
           ),
+          fetchUserProfile(),
         ]);
       } catch {
-        setError("Failed to fetch coding profiles");
+        setError("Failed to fetch profile data");
       } finally {
         setLoading(false);
       }
@@ -72,19 +109,88 @@ function OtherProfile() {
     <>
       <Navbar />
 
-      {/* MAIN WRAPPER */}
       <div className="flex flex-col min-h-screen bg-gray-950 text-white">
-
-        {/* CONTENT (padding for navbar & footer) */}
         <main className="flex-grow px-6 pt-28 pb-32">
           <h1 className="text-3xl font-bold text-center mb-12">
             Coding Profiles
           </h1>
 
+   {/* ================= USER BASIC PROFILE ================= */}
+{userProfile && (
+  <div className="max-w-4xl mx-auto mb-14 bg-gray-900 rounded-2xl p-6 shadow-lg">
+    <div className="flex flex-col sm:flex-row items-center gap-6">
+      
+      {/* Profile Image (optional) */}
+      <img
+        src={userProfile.profileImage || "/default-avatar.png"}
+        alt="Profile"
+        className="w-28 h-28 rounded-full border-2 border-indigo-500 object-cover"
+      />
+
+      <div className="text-center sm:text-left">
+        {/* Full Name */}
+        <h2 className="text-2xl font-bold">
+          {userProfile.name}
+        </h2>
+
+        {/* Username */}
+        {userProfile.username && (
+          <p className="text-gray-400 text-sm mt-1">
+            @{userProfile.username}
+          </p>
+        )}
+
+        {/* Buttons */}
+        <div className="flex flex-wrap gap-4 mt-4 justify-center sm:justify-start">
+
+          {userProfile.linkedin && (
+            <a
+              href={userProfile.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-lg transition"
+            >
+              LinkedIn
+            </a>
+          )}
+
+          {userProfile.github && (
+            <a
+              href={userProfile.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gray-800 hover:bg-gray-700 px-5 py-2 rounded-lg transition"
+            >
+              GitHub
+            </a>
+          )}
+
+          {userProfile.resume ? (
+            <a
+              href={userProfile.resume}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-green-600 hover:bg-green-700 px-5 py-2 rounded-lg transition"
+            >
+              View Resume
+            </a>
+          ) : (
+            <span className="text-gray-400 text-sm mt-2">
+              Resume not uploaded
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+
+          {/* ================= CODING PROFILES ================= */}
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* ===================== LeetCode ===================== */}
-            <div className="bg-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition">
+
+            {/* ========== LeetCode ========== */}
+            <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
               <h2 className="text-2xl font-semibold text-yellow-400 mb-4 text-center">
                 LeetCode Profile
               </h2>
@@ -93,32 +199,9 @@ function OtherProfile() {
                 <>
                   <p><span className="text-gray-400">Username:</span> {leetcodeData.handler}</p>
                   <p><span className="text-gray-400">Rank:</span> {leetcodeData.rank}</p>
-                  <p>
-                    <span className="text-gray-400">Rating:</span>{" "}
-                    {leetcodeData.rating
-                      ? leetcodeData.rating.toFixed(2)
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <span className="text-gray-400">Streak:</span>{" "}
-                    {leetcodeData.streak} days
-                  </p>
-                  <p>
-                    <span className="text-gray-400">Languages:</span>{" "}
-                    {leetcodeData.languagesUsed?.join(", ") || "N/A"}
-                  </p>
-
-                  <div className="mt-4">
-                    <h3 className="font-semibold mb-2">Submissions</h3>
-                    <ul className="space-y-1 text-sm">
-                      {leetcodeData.submissionCount?.map((item, index) => (
-                        <li key={index}>
-                          {item.difficulty}:{" "}
-                          <span className="font-medium">{item.count}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <p><span className="text-gray-400">Rating:</span> {leetcodeData.rating?.toFixed(2) || "N/A"}</p>
+                  <p><span className="text-gray-400">Streak:</span> {leetcodeData.streak} days</p>
+                  <p><span className="text-gray-400">Languages:</span> {leetcodeData.languagesUsed?.join(", ") || "N/A"}</p>
 
                   <div className="mt-6 text-center">
                     <a
@@ -138,8 +221,8 @@ function OtherProfile() {
               )}
             </div>
 
-            {/* ===================== Codeforces ===================== */}
-            <div className="bg-gray-900 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition">
+            {/* ========== Codeforces ========== */}
+            <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
               <h2 className="text-2xl font-semibold text-blue-400 mb-4 text-center">
                 Codeforces Profile
               </h2>
@@ -162,13 +245,10 @@ function OtherProfile() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <p><span className="text-gray-400">Max Rank:</span> {codeforcesData.maxRank}</p>
-                    <p><span className="text-gray-400">Max Rating:</span> {codeforcesData.maxRating}</p>
-                    <p><span className="text-gray-400">Contribution:</span> {codeforcesData.contribution}</p>
-                    <p><span className="text-gray-400">Joined:</span> {formatDate(codeforcesData.registrationTimeSeconds)}</p>
-                    <p><span className="text-gray-400">Last Online:</span> {formatDate(codeforcesData.lastOnlineTimeSeconds)}</p>
-                  </div>
+                  <p><span className="text-gray-400">Max Rank:</span> {codeforcesData.maxRank}</p>
+                  <p><span className="text-gray-400">Max Rating:</span> {codeforcesData.maxRating}</p>
+                  <p><span className="text-gray-400">Contribution:</span> {codeforcesData.contribution}</p>
+                  <p><span className="text-gray-400">Joined:</span> {formatDate(codeforcesData.registrationTimeSeconds)}</p>
 
                   <div className="mt-6 text-center">
                     <a
@@ -187,7 +267,6 @@ function OtherProfile() {
                 </p>
               )}
             </div>
-
           </div>
         </main>
 

@@ -207,7 +207,7 @@ function Chat() {
   />
 ) : (
   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 bg-black flex items-center justify-center font-bold text-lg">
-    {selectedUser?.name?.charAt(0)}
+    {u?.name?.charAt(0)}
   </div>
 )}
 

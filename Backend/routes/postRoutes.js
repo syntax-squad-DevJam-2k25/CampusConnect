@@ -4,7 +4,7 @@ const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
 const { communityUpload } = require("../middleware/upload.middleware");
-const { createPost,getAllPosts } = require("../controllers/postcontroller");
+const { createPost,getAllPosts, deletePost } = require("../controllers/postcontroller");
 
 console.log("communityUpload:", communityUpload);
 console.log("authMiddleware:", authMiddleware);
@@ -20,6 +20,11 @@ router.get(
   "/",
   authMiddleware,
   getAllPosts
+);
+router.delete(
+  "/delete/:postId",
+  authMiddleware,
+  deletePost
 );
 
 module.exports = router;

@@ -95,5 +95,56 @@ exports.getAllPosts = async (req, res) => {
 };
 
 
+exports.deletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized user"
+      });
+    }
+
+    const userId = req.user._id;
+    const post = await Post.findById(postId);
+
+     console.log("USER:", req.user);
+     console.log("POST ID:", req.params.postId);
+
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found"
+      });
+    }
+
+    // 🔐 OWNER CHECK
+   if (post.postedBy.toString() !== userId.toString()) {
+  return res.status(403).json({
+    success: false,
+    message: "You are not allowed to delete this post"
+  });
+}
+
+
+    await post.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Post deleted successfully"
+    });
+
+  } catch (error) {
+    console.error("❌ Delete Post Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+
 
 

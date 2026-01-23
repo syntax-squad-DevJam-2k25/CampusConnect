@@ -15,6 +15,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const codeforcesRoutes = require("./routes/routeCodeforces");
+const postRoutes = require("./routes/postRoutes");  
 
 // 🔥 SOCKET IMPORT
 const { initSocket } = require("./config/socket");
@@ -57,6 +58,8 @@ const server = http.createServer(app);
 // 🔥 initialize socket
 initSocket(server);
 
+
+app.use("/api/community", postRoutes);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

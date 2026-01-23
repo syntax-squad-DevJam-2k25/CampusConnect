@@ -23,6 +23,7 @@ exports.getLoggedUser = async (req, res) => {
 /* ===================== GET ALL USERS ===================== */
 exports.getAllUsers = async (req, res) => {
   try {
+    console.log("Fetching all users..."); 
     const users = await User.find({});
     return res.status(200).json({
       success: true,

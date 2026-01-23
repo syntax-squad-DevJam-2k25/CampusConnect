@@ -2,6 +2,7 @@ const router = require("express").Router();
 const authMiddleware = require("./../middleware/authMiddleware");
 const userController = require("./../controllers/userController");
 const upload = require("../config/multer");
+const User = require("../models/User");
 
 /* ===================== USER ROUTES ===================== */
 router.get("/me", authMiddleware, userController.getMe);
@@ -65,5 +66,27 @@ router.post(
 
   userController.getLeetcodeProfile2
 );
+
+router.get(
+  "/count",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const totalUsers = await User.countDocuments();
+      console.log("Total users:", totalUsers);
+
+      res.status(200).json({
+        success: true,
+        totalUsers
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch user count"
+      });
+    }
+  }
+);
+
 
 module.exports = router;

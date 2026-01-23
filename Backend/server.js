@@ -59,7 +59,11 @@ const server = http.createServer(app);
 initSocket(server);
 
 
-app.use("/api/community", postRoutes);
+app.use("/api/community", (req, res, next) => {
+  console.log("➡️ Community Route Accessed  ");
+  next();
+},
+postRoutes);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

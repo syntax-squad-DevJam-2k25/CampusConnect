@@ -3,10 +3,11 @@ import axios from "axios";
 import Navbar from "../Components/Navbar";
 import { FaHeart, FaComment, FaShare, FaSmile, FaImage, FaVideo, FaTrash, FaPaperclip, FaFilePdf, FaFileWord, FaFileExcel } from "react-icons/fa";
 import socket from "../socket";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Community = () => {
   const token = localStorage.getItem("token");
-
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -30,10 +31,10 @@ const Community = () => {
         );
         // Refresh feed
         fetchPosts();
-        alert("Post deleted successfully");
+        toast.success("Post deleted successfully");
       } catch (err) {
         console.error(err);
-        alert("Failed to delete post");
+        toast.error("You can not delete other Post");
       }
     }
   };
@@ -65,7 +66,7 @@ const Community = () => {
   // ================= CREATE POST =================
   const handlePost = async () => {
     if (!content && !file) {
-      alert("Please write something or upload a file");
+      toast.warning("Please write something or upload a file");
       return;
     }
 
@@ -100,7 +101,7 @@ const Community = () => {
       fetchPosts();
     } catch (err) {
       console.error(err);
-      alert("Failed to create post");
+      toast.error("Failed to create post");
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ useEffect(() => {
       setPosts(res.data.posts || []);
     } catch (err) {
       console.error(err);
-      alert("Failed to load community posts");
+      toast.error("Failed to load community posts");
     } finally {
       setLoadingPosts(false);
     }
@@ -162,7 +163,15 @@ useEffect(() => {
   return (
     <>
       <Navbar />
-
+ <ToastContainer
+    position="top-right"
+    autoClose={3000}
+    hideProgressBar={false}
+    newestOnTop
+    closeOnClick
+    pauseOnHover
+    theme="dark"
+  />
       <div className="w-screen h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white overflow-hidden flex flex-col">
         {/* Header */}
         <div className="pt-24 px-6 pb-6 border-b border-gray-700">
@@ -316,13 +325,17 @@ useEffect(() => {
                             Anonymous
                           </span>
                         )}
-                        <button
-                          onClick={() => handleDeletePost(post._id)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition"
-                          title="Delete post"
-                        >
-                          <FaTrash className="text-sm" />
-                        </button>
+                      
+                       {token && (
+  <button
+    onClick={() => handleDeletePost(post._id)}
+    className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition"
+    title="Delete post"
+  >
+    <FaTrash className="text-sm" />
+  </button>
+)}
+
                       </div>
                     </div>
                   </div>

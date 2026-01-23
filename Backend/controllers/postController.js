@@ -64,12 +64,18 @@ exports.getAllPosts = async (req, res) => {
       .populate("postedBy", "name profileImage") // adjust fields as per User model
       .sort({ createdAt: -1 });
 
-    const formattedPosts = posts.map((post) => ({
+          let totalLikes = 0;
+
+    const formattedPosts = posts.map((post) => {
+      const likesCount = post.likes.length;
+      totalLikes += likesCount;
+      return {
       _id: post._id,
       content: post.content,
       media: post.media,
       isAnonymous: post.isAnonymous,
       anonymousName: post.anonymousName,
+      likes: post.likes,
       likesCount: post.likes.length,
       repliesCount: post.repliesCount,
       createdAt: post.createdAt,
@@ -78,11 +84,13 @@ exports.getAllPosts = async (req, res) => {
       postedBy: post.isAnonymous
         ? { name: "Anonymous", profileImage: null }
         : post.postedBy
-    }));
+      };
+    });
 
     res.status(200).json({
       success: true,
       count: formattedPosts.length,
+      totalLikes,
       posts: formattedPosts
     });
   } catch (error) {
@@ -139,6 +147,50 @@ exports.deletePost = async (req, res) => {
   } catch (error) {
     console.error("❌ Delete Post Error:", error);
     return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+exports.toggleLikePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found"
+      });
+    }
+
+    const isLiked = post.likes.includes(userId);
+
+    if (isLiked) {
+      // 👎 DISLIKE (REMOVE LIKE)
+      post.likes = post.likes.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+    } else {
+      // 👍 LIKE
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    res.status(200).json({
+      success: true,
+      liked: !isLiked,
+      likesCount: post.likes.length,
+      postId
+    });
+
+  } catch (error) {
+    console.error("❌ Toggle Like Error:", error);
+    res.status(500).json({
       success: false,
       message: "Internal server error"
     });

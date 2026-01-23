@@ -8,6 +8,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 const Community = () => {
   const token = localStorage.getItem("token");
+const currentUserId = localStorage.getItem("userId"); 
+
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
@@ -16,8 +18,11 @@ const Community = () => {
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [data, setData] = useState([]);
+  const [totalLikes, setTotalLikes] = useState(0);
+
 
   // ================= DELETE POST =================
+  //=================Work properly================= 
   const handleDeletePost = async (postId) => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
@@ -131,6 +136,50 @@ useEffect(() => {
   getTotalUsers();   // ✅ ADD THIS
 }, []);
 
+const handleLike = async (postId) => {
+  try {
+    const res = await axios.post(
+      `http://localhost:5001/api/community/like/${postId}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const { liked } = res.data;
+
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post._id !== postId) return post;
+
+        const safeLikes = Array.isArray(post.likes) ? post.likes : [];
+
+        return {
+          ...post,
+          likes: liked
+            ? [...safeLikes, currentUserId]
+            : safeLikes.filter((id) => id !== currentUserId),
+        };
+      })
+    );
+    toast.success(liked ? "Post liked" : "Like removed");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to like post");
+  }
+};
+
+
+
+socket.on("postLiked", ({ postId, likesCount }) => {
+  setPosts((prev) =>
+    prev.map((p) =>
+      p._id === postId ? { ...p, likesCount } : p
+    )
+  );
+});
 
 
   // ================= FETCH POSTS =================
@@ -148,6 +197,7 @@ useEffect(() => {
       );
 
       setPosts(res.data.posts || []);
+      setTotalLikes(res.data.totalLikes || 0);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load community posts");
@@ -372,10 +422,19 @@ useEffect(() => {
 
                   {/* Post Footer - Interactions */}
                   <div className="p-4 border-t border-gray-700 flex justify-around items-center bg-gray-900/50">
-                    <button className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition group">
-                      <FaHeart className="group-hover:scale-110 transition" />
-                      <span className="text-sm">Like</span>
-                    </button>
+              <button
+  onClick={() => handleLike(post._id)}
+  className={`flex items-center gap-2 transition group ${
+    post.likes?.includes(currentUserId)
+      ? "text-red-400"
+      : "text-gray-400 hover:text-red-400"
+  }`}
+>
+  <FaHeart className="group-hover:scale-110 transition" />
+  <span className="text-sm">{post.likes?.length || 0}</span>
+</button>
+
+
                     <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition group">
                       <FaComment className="group-hover:scale-110 transition" />
                       <span className="text-sm">Reply</span>
@@ -426,7 +485,7 @@ useEffect(() => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Total Engagement</span>
-                  <span className="font-bold text-purple-400">15.2K</span>
+                  <span className="font-bold text-purple-400">{totalLikes}</span>
                 </div>
               </div>
             </div>

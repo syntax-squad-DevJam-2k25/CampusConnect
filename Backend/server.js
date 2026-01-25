@@ -2,69 +2,54 @@ const express = require("express");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const http = require("http"); // ✅ REQUIRED
+const http = require("http");
 
-// Load env variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-/* ===================== ROUTE IMPORTS ===================== */
+/* ROUTES */
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const codeforcesRoutes = require("./routes/routeCodeforces");
-const postRoutes = require("./routes/postRoutes");  
+const postRoutes = require("./routes/postRoutes");
+const commentRoutes = require("./routes/commentRoutes");
 
-// 🔥 SOCKET IMPORT
+/* SOCKET */
 const { initSocket } = require("./config/socket");
 
-/* ===================== MIDDLEWARE ===================== */
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-);
-
+/* MIDDLEWARE */
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
 
-/* ===================== REQUEST LOGGER ===================== */
 app.use((req, res, next) => {
   console.log(`➡️ ${req.method} ${req.originalUrl}`);
   next();
 });
 
-/* ===================== ROUTES ===================== */
+/* ROUTES */
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
-
 app.use("/api/codeforces", codeforcesRoutes);
+app.use("/api/community", postRoutes);
+app.use("/api/comments", commentRoutes);
 
-/* ===================== DATABASE ===================== */
+/* DB */
 mongoose
   .connect(process.env.MONGO_URL)
-  .then(() => console.log("MongoDB connected"))
+  .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => {
-    console.error("MongoDB connection error:", err.message);
+    console.error(err.message);
     process.exit(1);
   });
 
-/* ===================== HTTP SERVER + SOCKET ===================== */
+/* SERVER */
 const server = http.createServer(app);
-
-// 🔥 initialize socket
 initSocket(server);
 
-
-app.use("/api/community", (req, res, next) => {
-  console.log("➡️ Community Route Accessed  ");
-  next();
-},
-postRoutes);
-
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

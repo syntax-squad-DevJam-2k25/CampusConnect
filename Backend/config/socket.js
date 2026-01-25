@@ -11,8 +11,9 @@ const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id);
+    console.log("🔌 Socket connected:", socket.id);
 
+    /* ===== CHAT ===== */
     socket.on("join-chat", (chatId) => {
       socket.join(chatId);
     });
@@ -20,22 +21,26 @@ const initSocket = (server) => {
     socket.on("send-message", (data) => {
       io.to(data.chatId).emit("receive-message", data);
     });
-  // EDIT MESSAGE
-  socket.on("edit-message", ({ chatId, messageId, newText }) => {
-    io.to(chatId).emit("message-edited", {
-      chatId,
-      messageId,
-      newText,
-    });
-  });
 
-    // DELETE CHAT
-  socket.on("delete-chat", ({ chatId }) => {
-    io.to(chatId).emit("chat-deleted", { chatId });
-  });
-  
+    socket.on("edit-message", ({ chatId, messageId, newText }) => {
+      io.to(chatId).emit("message-edited", {
+        chatId,
+        messageId,
+        newText,
+      });
+    });
+
+    socket.on("delete-chat", ({ chatId }) => {
+      io.to(chatId).emit("chat-deleted", { chatId });
+    });
+
+    /* ===== POSTS / COMMENTS ===== */
+    socket.on("join-post", (postId) => {
+      socket.join(postId);
+    });
+
     socket.on("disconnect", () => {
-      console.log("Socket disconnected:", socket.id);
+      console.log("❌ Socket disconnected:", socket.id);
     });
   });
 

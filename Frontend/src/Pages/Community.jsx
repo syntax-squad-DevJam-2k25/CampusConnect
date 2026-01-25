@@ -14,15 +14,19 @@ const currentUserId = localStorage.getItem("userId");
   const [file, setFile] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
-  const [data, setData] = useState([]);
   const [totalLikes, setTotalLikes] = useState(0);
+const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+const [commentText, setCommentText] = useState("");
+const [commentLoading, setCommentLoading] = useState(false);
+const [comments, setComments] = useState({});
+
 
 
   // ================= DELETE POST =================
-  //=================Work properly================= 
+
   const handleDeletePost = async (postId) => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
@@ -44,29 +48,8 @@ const currentUserId = localStorage.getItem("userId");
     }
   };
 
-  useEffect(() => {
-  socket.on("postCreated", (post) => {
-    setPosts((prev) => [post, ...prev]);
-  });
 
-  socket.on("postLiked", ({ postId, likesCount }) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p._id === postId ? { ...p, likesCount } : p
-      )
-    );
-  });
 
-  socket.on("postDeleted", (postId) => {
-    setPosts((prev) => prev.filter((p) => p._id !== postId));
-  });
-
-  return () => {
-    socket.off("postCreated");
-    socket.off("postLiked");
-    socket.off("postDeleted");
-  };
-}, []);
 
   // ================= CREATE POST =================
   const handlePost = async () => {
@@ -135,6 +118,83 @@ useEffect(() => {
   fetchPosts();
   getTotalUsers();   // ✅ ADD THIS
 }, []);
+const handleCommentClick = (postId) => {
+  if (activeCommentPostId === postId) {
+    setActiveCommentPostId(null);
+    socket.emit("join-post", postId);
+
+  } else {
+    setActiveCommentPostId(postId);
+    fetchComments(postId);
+  }
+};
+
+const fetchComments = async (postId) => {
+  try {
+    const res = await axios.get(
+      `http://localhost:5001/api/comments/${postId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setComments((prev) => ({
+      ...prev,
+      [postId]: res.data,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch comments", err);
+  }
+};
+
+const handleAddComment = async (postId) => {
+  if (!commentText.trim()) return;
+
+  try {
+    setCommentLoading(true);
+
+    await axios.post(
+      `http://localhost:5001/api/comments/${postId}`,
+      { text: commentText },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    toast.success("Comment added");
+    setCommentText("");
+    fetchComments(postId);
+  } catch (err) {
+    toast.error("Failed to add comment");
+  } finally {
+    setCommentLoading(false);
+  }
+};
+
+const handleDeleteComment = async (commentId, postId) => {
+  if (!window.confirm("Delete this comment?")) return;
+
+  try {
+    await axios.delete(
+      `http://localhost:5001/api/comments/delete/${commentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    toast.success("Comment deleted");
+    fetchComments(postId);
+  } catch (err) {
+    toast.error("Delete failed");
+  }
+};
+
 
 const handleLike = async (postId) => {
   try {
@@ -210,6 +270,10 @@ socket.on("postLiked", ({ postId, likesCount }) => {
     fetchPosts();
   }, []);
 
+
+
+
+
   return (
     <>
       <Navbar />
@@ -222,7 +286,80 @@ socket.on("postLiked", ({ postId, likesCount }) => {
     pauseOnHover
     theme="dark"
   />
-      <div className="w-screen h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white overflow-hidden flex flex-col">
+      <div className="w-screen h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white overflow-hidden flex flex-col relative">
+        {/* Comment Drawer */}
+        {activeCommentPostId && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 z-40"
+              onClick={() => setActiveCommentPostId(null)}
+            />
+
+            <div className={`fixed top-0 right-0 h-full w-96 bg-gray-900 z-50 transition-transform flex flex-col min-h-0 ${
+              activeCommentPostId ? "translate-x-0" : "translate-x-full"
+            }`}>
+              <div className="p-4 border-b border-gray-700 flex justify-between">
+                <h3 className="text-lg font-bold">Comments</h3>
+                <button onClick={() => setActiveCommentPostId(null)}>✕</button>
+              </div>
+
+              {/* Comment List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+                {comments[activeCommentPostId]?.length > 0 ? (
+                  comments[activeCommentPostId].map((comment) => (
+                    <div
+                      key={comment._id}
+                      className="bg-gray-800 p-3 rounded-lg"
+                    >
+                      <div className="flex justify-between">
+                        <p className="font-semibold">{comment.username}</p>
+
+                        {comment.userId === currentUserId && (
+                          <FaTrash
+                            className="cursor-pointer text-red-400"
+                            onClick={() =>
+                              handleDeleteComment(
+                                comment._id,
+                                activeCommentPostId
+                              )
+                            }
+                          />
+                        )}
+                      </div>
+
+                      <p className="text-sm mt-1">{comment.text}</p>
+
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-center">No comments yet 💬</p>
+                )}
+              </div>
+
+              {/* Add Comment */}
+              <div className="p-4 border-t border-gray-700 bg-gray-900">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  className="w-full bg-gray-800 text-white p-2 rounded placeholder-gray-400"
+                  placeholder="Write a comment..."
+                  rows={3}
+                />
+                <button
+                  onClick={() => handleAddComment(activeCommentPostId)}
+                  disabled={commentLoading}
+                  className="w-full mt-2 bg-blue-500 py-2 rounded"
+                >
+                  {commentLoading ? "Posting..." : "Post Comment"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Header */}
         <div className="pt-24 px-6 pb-6 border-b border-gray-700">
           <div className="max-w-7xl mx-auto">
@@ -435,10 +572,14 @@ socket.on("postLiked", ({ postId, likesCount }) => {
 </button>
 
 
-                    <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition group">
-                      <FaComment className="group-hover:scale-110 transition" />
-                      <span className="text-sm">Reply</span>
-                    </button>
+                   <button
+                    onClick={() => handleCommentClick(post._id)}
+                    className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition group"
+                  >
+                    <FaComment className="group-hover:scale-110 transition" />
+                    <span className="text-sm">Comment</span>
+                  </button>
+
                     <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition group">
                       <FaShare className="group-hover:scale-110 transition" />
                       <span className="text-sm">Share</span>

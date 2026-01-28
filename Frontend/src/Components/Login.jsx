@@ -74,80 +74,80 @@ function Login() {
 
 
 
-  
-const handleLogin = async (e) => {
-  e.preventDefault();
-  console.log("🔥 handleLogin triggered with loginData:", loginData);
 
-  try {
-    // ----------------- STEP 1: Send login request -----------------
-    console.log("🔹 Sending login request...");
-    const response = await fetch("http://localhost:5001/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(loginData),
-    });
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    console.log("🔥 handleLogin triggered with loginData:", loginData);
 
-    console.log("🔹 Login response status:", response.status);
-    const data = await response.json();
-    console.log("🔹 Login response body:", data);
+    try {
+      // ----------------- STEP 1: Send login request -----------------
+      console.log("🔹 Sending login request...");
+      const response = await fetch("http://localhost:5001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData),
+      });
 
-    if (response.ok) {
-      console.log("✅ Login successful");
+      console.log("🔹 Login response status:", response.status);
+      const data = await response.json();
+      console.log("🔹 Login response body:", data);
 
-      // ----------------- STEP 2: Save token -----------------
-      localStorage.setItem("token", data.token);
-      console.log("🔹 Token saved to localStorage");
+      if (response.ok) {
+        console.log("✅ Login successful");
 
-      // ----------------- STEP 3: Fetch full logged user info -----------------
-      try {
-        console.log("🔹 Fetching full logged user info...");
-        const userData = await getLoggedUser(); // safe API call
-        console.log("🔹 getLoggedUser returned:", userData);
+        // ----------------- STEP 2: Save token -----------------
+        localStorage.setItem("token", data.token);
+        console.log("🔹 Token saved to localStorage");
 
-        // ----------------- STEP 4: Dispatch Redux safely -----------------
-        if (userData?.user) {
-          dispatch(loginSuccess(userData.user)); // ✅ only dispatch real user
+        // ----------------- STEP 3: Fetch full logged user info -----------------
+        try {
+          console.log("🔹 Fetching full logged user info...");
+          const userData = await getLoggedUser(); // safe API call
+          console.log("🔹 getLoggedUser returned:", userData);
+
+          // ----------------- STEP 4: Dispatch Redux safely -----------------
+          if (userData?.user) {
+            dispatch(loginSuccess(userData.user)); // ✅ only dispatch real user
+          }
+
+          dispatch(
+            setUser({
+              user: userData?.user || null,
+              errorMessage: userData?.errorMessage || null,
+            })
+          );
+          console.log("🔹 Redux setUser dispatched successfully");
+        } catch (err) {
+          console.error("❌ Error fetching logged user:", err);
+
+          dispatch(
+            setUser({
+              user: null,
+              errorMessage: err.message || "Failed to fetch user",
+            })
+          );
         }
-
-        dispatch(
-          setUser({
-            user: userData?.user || null,
-            errorMessage: userData?.errorMessage || null,
-          })
-        );
-        console.log("🔹 Redux setUser dispatched successfully");
-      } catch (err) {
-        console.error("❌ Error fetching logged user:", err);
+      } else {
+        console.warn("⚠️ Login failed, dispatching error to Redux");
 
         dispatch(
           setUser({
             user: null,
-            errorMessage: err.message || "Failed to fetch user",
+            errorMessage: data.message || "Login failed",
           })
         );
       }
-    } else {
-      console.warn("⚠️ Login failed, dispatching error to Redux");
+    } catch (error) {
+      console.error("❌ handleLogin catch error:", error);
 
       dispatch(
         setUser({
           user: null,
-          errorMessage: data.message || "Login failed",
+          errorMessage: error.message || "Something went wrong",
         })
       );
     }
-  } catch (error) {
-    console.error("❌ handleLogin catch error:", error);
-
-    dispatch(
-      setUser({
-        user: null,
-        errorMessage: error.message || "Something went wrong",
-      })
-    );
-  }
-};
+  };
 
 
   /* ================= GOOGLE AUTH ================= */
@@ -174,137 +174,138 @@ const handleLogin = async (e) => {
   };
 
   return (
-    <div
-      className={`container ${
-        isSignInActive ? "" : "right-panel-active"
-      }`}
-      id="container"
-    >
-        
-      <ToastContainer position="top-right" autoClose={2000} />
-      
-      {/* Sign Up Form */}
-      <div className={`form-container sign-up-container ${isSignInActive ? "hidden" : ""}`}>
-        <form onSubmit={handleRegister}>
-          <h1>Create Account</h1>
+    <div className="login-root">
+      <div
+        className={`login-page-container ${isSignInActive ? "" : "right-panel-active"
+          }`}
+        id="login-page-container"
+      >
 
-          <input
-            type="text"
-            name="name"
-            placeholder="NAME"
-            required
-            onChange={handleRegisterChange}
-          />
-          <input
-            type="email"
-            name="gemail"
-            placeholder="GSUITE ID"
-            required
-            onChange={handleRegisterChange}
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="PERSONAL EMAIL"
-            required
-            onChange={handleRegisterChange}
-          />
+        <ToastContainer position="top-right" autoClose={2000} />
 
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="CREATE PASSWORD"
-            required
-            onChange={handleRegisterChange}
-          />
+        {/* Sign Up Form */}
+        <div className={`form-container sign-up-container ${isSignInActive ? "hidden" : ""}`}>
+          <form onSubmit={handleRegister}>
+            <h1>Create Account</h1>
 
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="CONFIRM PASSWORD"
-            required
-            onChange={handleRegisterChange}
-          />
-
-          <select name="branch" required onChange={handleRegisterChange}>
-            <option value="">Choose your branch</option>
-            <option value="BTECH">BTECH</option>
-            <option value="MCA">MCA</option>
-            <option value="MBA">MBA</option>
-            <option value="MSC">MSC</option>
-            <option value="MTECH">MTECH</option>
-          </select>
-
-          <button type="submit">REGISTER</button>
-
-          {/* GOOGLE REGISTER */}
-          <div style={{ marginTop: "10px" }}>
-            <GoogleLogin
-              onSuccess={handleGoogleAuth}
-              onError={() => toast.error("Google Login Failed")}
+            <input
+              type="text"
+              name="name"
+              placeholder="NAME"
+              required
+              onChange={handleRegisterChange}
             />
-          </div>
-        </form>
-
-        <button className="switch-btn Login" onClick={switchToSignIn}>
-          Go to Login
-        </button>
-      </div>
-
-      {/* Sign In Form */}
-      <div className={`form-container sign-in-container ${isSignInActive ? "" : "hidden"}`}>
-        <form onSubmit={handleLogin}>
-          <h1>Login</h1>
-
-          <input
-            type="email"
-            name="email"
-            placeholder="PERSONAL EMAIL"
-            required
-            onChange={handleLoginChange}
-          />
-
-          <input
-            type="password"
-            name="password"
-            placeholder="PASSWORD"
-            required
-            onChange={handleLoginChange}
-          />
-
-          <button type="submit">LOGIN</button>
-
-          {/* GOOGLE LOGIN */}
-          <div style={{ marginTop: "10px" }}>
-            <GoogleLogin
-              onSuccess={handleGoogleAuth}
-              onError={() => toast.error("Google Login Failed")}
+            <input
+              type="email"
+              name="gemail"
+              placeholder="GSUITE ID"
+              required
+              onChange={handleRegisterChange}
             />
-          </div>
-        </form>
+            <input
+              type="email"
+              name="email"
+              placeholder="PERSONAL EMAIL"
+              required
+              onChange={handleRegisterChange}
+            />
 
-        <button className="switch-btn" onClick={switchToSignUp}>
-          Go to Register
-        </button>
-      </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="CREATE PASSWORD"
+              required
+              onChange={handleRegisterChange}
+            />
 
-      {/* Overlay Section */}
-      <div className="overlay-container">
-        <div className="overlay">
-          <div className="overlay-panel overlay-left">
-            <p>Once a student, forever a part of the legacy</p>
-            <button className="ghost" onClick={switchToSignIn}>
-              GO TO LOGIN
-            </button>
-          </div>
-          <div className="overlay-panel overlay-right">
-            <p>
-              MNNIT-A <IoIosSchool /> se chale jaoge, but campus ko kaise bhool
-              paoge
-            </p>
-            <button className="ghost" onClick={switchToSignUp}>
-              GO TO REGISTER
-            </button>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="CONFIRM PASSWORD"
+              required
+              onChange={handleRegisterChange}
+            />
+
+            <select name="branch" required onChange={handleRegisterChange}>
+              <option value="">Choose your branch</option>
+              <option value="BTECH">BTECH</option>
+              <option value="MCA">MCA</option>
+              <option value="MBA">MBA</option>
+              <option value="MSC">MSC</option>
+              <option value="MTECH">MTECH</option>
+            </select>
+
+            <button type="submit">REGISTER</button>
+
+            {/* GOOGLE REGISTER */}
+            <div style={{ marginTop: "10px" }}>
+              <GoogleLogin
+                onSuccess={handleGoogleAuth}
+                onError={() => toast.error("Google Login Failed")}
+              />
+            </div>
+          </form>
+
+          <button className="switch-btn Login" onClick={switchToSignIn}>
+            Go to Login
+          </button>
+        </div>
+
+        {/* Sign In Form */}
+        <div className={`form-container sign-in-container ${isSignInActive ? "" : "hidden"}`}>
+          <form onSubmit={handleLogin}>
+            <h1>Login</h1>
+
+            <input
+              type="email"
+              name="email"
+              placeholder="PERSONAL EMAIL"
+              required
+              onChange={handleLoginChange}
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="PASSWORD"
+              required
+              onChange={handleLoginChange}
+            />
+
+            <button type="submit">LOGIN</button>
+
+            {/* GOOGLE LOGIN */}
+            <div style={{ marginTop: "10px" }}>
+              <GoogleLogin
+                onSuccess={handleGoogleAuth}
+                onError={() => toast.error("Google Login Failed")}
+              />
+            </div>
+          </form>
+
+          <button className="switch-btn" onClick={switchToSignUp}>
+            Go to Register
+          </button>
+        </div>
+
+        {/* Overlay Section */}
+        <div className="overlay-container">
+          <div className="overlay">
+            <div className="overlay-panel overlay-left">
+              <p>Once a student, forever a part of the legacy</p>
+              <button className="ghost" onClick={switchToSignIn}>
+                GO TO LOGIN
+              </button>
+            </div>
+            <div className="overlay-panel overlay-right">
+              <p>
+                MNNIT-A <IoIosSchool /> se chale jaoge, but campus ko kaise bhool
+                paoge
+              </p>
+              <button className="ghost" onClick={switchToSignUp}>
+                GO TO REGISTER
+              </button>
+            </div>
           </div>
         </div>
       </div>

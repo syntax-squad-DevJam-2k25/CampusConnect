@@ -23,7 +23,7 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
             },
           }
         );
-        
+
         if (!response.ok) {
           throw new Error(`Failed with status ${response.status}`);
         }
@@ -63,9 +63,9 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
 
   return (
     <div className="leaderboard-container">
-       
+
       <table className="leaderboard-table">
-       
+
         <thead>
           <tr>
             <th>Rank</th>
@@ -78,7 +78,9 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
         <tbody>
           {sortedUsers.map((user, index) => (
             <tr key={user._id}>
-              <td id="rank">{index + 1}</td>
+              <td className="rank">
+                {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+              </td>
               <td>
                 <Link to={`/u/${user._id}`} className="leaderboard-link">
                   {user.name}

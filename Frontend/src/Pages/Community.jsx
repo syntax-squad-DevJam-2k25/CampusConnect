@@ -8,20 +8,20 @@ import "react-toastify/dist/ReactToastify.css";
 
 const Community = () => {
   const token = localStorage.getItem("token");
-const currentUserId = localStorage.getItem("userId"); 
-
+const currentUser = localStorage.getItem("user"); 
+const currentUserId = currentUser ? JSON.parse(currentUser)._id : null; 
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const [posts, setPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
-  const [totalLikes, setTotalLikes] = useState(0);
-const [activeCommentPostId, setActiveCommentPostId] = useState(null);
-const [commentText, setCommentText] = useState("");
-const [commentLoading, setCommentLoading] = useState(false);
-const [comments, setComments] = useState({});
+   const [posts, setPosts] = useState([]);
+   const [loadingPosts, setLoadingPosts] = useState(false);
+    const [totalLikes, setTotalLikes] = useState(0);
+   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+    const [commentText, setCommentText] = useState("");
+    const [commentLoading, setCommentLoading] = useState(false);
+   const [comments, setComments] = useState({});
 
 
 
@@ -47,9 +47,6 @@ const [comments, setComments] = useState({});
       }
     }
   };
-
-
-
 
   // ================= CREATE POST =================
   const handlePost = async () => {
@@ -174,7 +171,6 @@ const handleAddComment = async (postId) => {
     setCommentLoading(false);
   }
 };
-
 const handleDeleteComment = async (commentId, postId) => {
   if (!window.confirm("Delete this comment?")) return;
 
@@ -187,9 +183,17 @@ const handleDeleteComment = async (commentId, postId) => {
         },
       }
     );
+console.log("--------------------------");
 
     toast.success("Comment deleted");
-    fetchComments(postId);
+
+console.log("Kamani ");
+
+   try {
+    await fetchComments(postId);
+  } catch (fetchErr) {
+    console.error("Fetch failed:", fetchErr);
+  }
   } catch (err) {
     toast.error("Delete failed");
   }
@@ -307,13 +311,14 @@ socket.on("postLiked", ({ postId, likesCount }) => {
               <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                 {comments[activeCommentPostId]?.length > 0 ? (
                   comments[activeCommentPostId].map((comment) => (
+                  
                     <div
                       key={comment._id}
                       className="bg-gray-800 p-3 rounded-lg"
                     >
                       <div className="flex justify-between">
                         <p className="font-semibold">{comment.username}</p>
-
+    
                         {comment.userId === currentUserId && (
                           <FaTrash
                             className="cursor-pointer text-red-400"

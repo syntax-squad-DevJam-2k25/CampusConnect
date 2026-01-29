@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Navbar from "../Components/Navbar";
+import { DashboardLayout } from "../Components/DashboardLayout";
 import socket from "../socket"; // socket.io-client file
 
 function Chat() {
@@ -185,200 +185,190 @@ function Chat() {
   };
 
   return (
-    <div className="h-screen w-full flex bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* SIDEBAR */}
-      <div className="w-80 mtbg-white border-r border-gray-200 overflow-y-auto shadow-sm">
-        <div className="p-5 mt-5 bg-gradient-to-r from-blue-500 to-blue-600 bg-black">
-          <h2 className="text-xl font-bold">Messages</h2>
-        </div>
-        {users.map((u) => (
-          <div
-            key={u._id}
-            onClick={() => handleSelectUser(u)}
-            className={`flex items-center gap-3 px-4 py-4 cursor-pointer transition duration-200 border-b border-gray-100 group hover:bg-blue-50
-              ${selectedUser?._id === u._id ? "bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-500" : ""}`}
-          >
-            <div className={`w-12 h-12 rounded-full bg-black flex items-center justify-center font-bold text-lg transition duration-200 ${selectedUser?._id === u._id ? "bg-gradient-to-br from-blue-500 to-blue-600 shadow-md" : "bg-gradient-to-br from-blue-400 to-blue-500 group-hover:shadow-md"}`}>
-            {u?.profileImage ? (
-  <img
-    src={u.profileImage}
-    alt={u.name}
-    className="w-12 h-12 rounded-full object-cover"
-  />
-) : (
-  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 bg-black flex items-center justify-center font-bold text-lg">
-    {u?.name?.charAt(0)}
-  </div>
-)}
-
-            </div>
-            <div className="flex-1">
-              <p className={`font-semibold ${selectedUser?._id === u._id ? "text-blue-700" : "text-gray-800"}`}>{u.name}</p>
-            
-            </div>
+    <DashboardLayout >
+      <div className="h-[calc(100vh-8.5rem)] w-full flex bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        {/* SIDEBAR */}
+        <div className="w-80 border-r border-slate-800 bg-slate-900 overflow-y-auto">
+          <div className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Contacts</h2>
           </div>
-        ))}
-      </div>
+          {filteredUsers.map((u) => (
+            <div
+              key={u._id}
+              onClick={() => handleSelectUser(u)}
+              className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-slate-800/50 hover:bg-slate-800
+                ${selectedUser?._id === u._id
+                  ? "bg-slate-800 border-l-2 border-l-blue-500 pl-[14px]"
+                  : "border-l-2 border-l-transparent"}`}
+            >
+              <div className="relative">
+                {u?.profileImage ? (
+                  <img
+                    src={u.profileImage}
+                    alt={u.name}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-300 ring-2 ring-slate-700">
+                    {u?.name?.charAt(0)}
+                  </div>
+                )}
+                {/* Online status indicator can go here */}
+              </div>
 
-      {/* CHAT */}
-      <div className="flex-1 flex flex-col">
-        {!currentChat ? (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            Select a user
-          </div>
-        ) : (
-          <>
-            {/* HEADER */}
-            <div className="h-25 bg-white border-b border-gray-200 flex items-center px-6 font-semibold shadow-sm">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 bg-black flex items-center justify-center font-bold text-lg">
-                  {selectedUser?.profileImage ? (
-  <img
-    src={selectedUser.profileImage}
-    alt={selectedUser.name}
-    className="w-12 h-12 rounded-full object-cover"
-  />
-) : (
-  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 bg-black flex items-center justify-center font-bold text-lg">
-    {selectedUser?.name?.charAt(0)}
-  </div>
-)}
-
-                </div>
-                <div>
-                  <p className="text-gray-800 font-bold">{selectedUser?.name}</p>
-                
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-medium truncate ${selectedUser?._id === u._id ? "text-white" : "text-slate-300"}`}>
+                  {u.name}
+                </p>
+                {/* Last message preview could go here */}
               </div>
             </div>
+          ))}
+        </div>
 
-            {/* MESSAGES */}
-            <div className="flex-1 p-6 overflow-y-auto bg-gradient-to-b from-white to-gray-50 space-y-4">
-              {messages.map((msg) => {
-                const isMine = msg.sender === myUserId;
-                return (
-                  <div
-                    key={msg._id}
-                    className={`flex mb-4 ${isMine ? "justify-end" : "justify-start"} group`}
-                  >
-                    <div className="flex flex-col gap-1 max-w-sm">
-                      <div
-                        className={`relative px-4 py-3 rounded-2xl text-sm leading-relaxed transition duration-200 shadow-sm hover:shadow-md
-                          ${isMine
-                            ? "bg-gradient-to-r from-blue-500 to-blue-600 bg-black rounded-br-none"
-                            : "bg-white text-gray-800 rounded-bl-none border border-gray-200"}`}
-                      >
-                        <div className="text-[11px] font-bold opacity-70 mb-1">
-                          {isMine ? "You" : userMap[msg.sender]}
+        {/* CHAT AREA */}
+        <div className="flex-1 flex flex-col bg-slate-950">
+          {!currentChat ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-4">
+              <div className="w-16 h-16 rounded-full bg-slate-900 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p>Select a user to start chatting</p>
+            </div>
+          ) : (
+            <>
+              {/* HEADER */}
+              <div className="h-16 bg-slate-900 border-b border-slate-800 flex items-center px-6 shadow-sm z-10">
+                <div className="flex items-center gap-3">
+                  {selectedUser?.profileImage ? (
+                    <img
+                      src={selectedUser.profileImage}
+                      alt={selectedUser.name}
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-700"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-300 ring-2 ring-slate-700">
+                      {selectedUser?.name?.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-slate-200 font-semibold">{selectedUser?.name}</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* MESSAGES */}
+              <div className="flex-1 p-6 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+                {messages.map((msg) => {
+                  const isMine = msg.sender === myUserId;
+                  return (
+                    <div
+                      key={msg._id}
+                      className={`flex mb-2 ${isMine ? "justify-end" : "justify-start"} group`}
+                    >
+                      <div className={`flex flex-col max-w-[70%] ${isMine ? "items-end" : "items-start"}`}>
+                        <div
+                          className={`relative px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm
+                            ${isMine
+                              ? "bg-blue-600/90 text-white rounded-br-sm"
+                              : "bg-slate-800 text-slate-200 rounded-bl-sm"}`}
+                        >
+                          {!isMine && (
+                            <div className="text-[10px] font-bold opacity-50 mb-1 text-slate-400">
+                              {userMap[msg.sender]}
+                            </div>
+                          )}
+
+                          {editingMsgId === msg._id ? (
+                            <div className="flex gap-2 items-center min-w-[200px]">
+                              <input
+                                value={editedText}
+                                onChange={(e) => setEditedText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  e.stopPropagation();
+                                  if (e.key === "Enter") handleEditMessage(msg._id);
+                                  if (e.key === "Escape") {
+                                    setEditingMsgId(null);
+                                    setEditedText("");
+                                  }
+                                }}
+                                className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 w-full focus:outline-none focus:border-blue-500"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <button onClick={(e) => { e.stopPropagation(); handleEditMessage(msg._id); }} className="text-green-400 hover:text-green-300">✓</button>
+                              <button onClick={(e) => { e.stopPropagation(); setEditingMsgId(null); }} className="text-slate-400 hover:text-slate-300">✕</button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="break-words">{msg.text}</div>
+                              {msg.edited && (
+                                <span className="text-[10px] ml-1 opacity-60 italic block text-right mt-1">
+                                  (edited)
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
 
-                        {editingMsgId === msg._id ? (
-                          <div className="flex gap-2 items-center mt-2">
-                            <input
-                              value={editedText}
-                              onChange={(e) => setEditedText(e.target.value)}
-                              onKeyDown={(e) => {
-                                e.stopPropagation();
-                                if (e.key === "Enter") handleEditMessage(msg._id);
-                                if (e.key === "Escape") {
-                                  setEditingMsgId(null);
-                                  setEditedText("");
-                                }
-                              }}
-                              className={`border-2 rounded-lg px-3 py-1.5 text-sm flex-1 transition duration-200 focus:outline-none ${
-                                isMine
-                                  ? "border-blue-200 bg-blue-400 bg-black placeholder-blue-200 focus:border-blue-100 focus:ring-2 focus:ring-blue-300"
-                                  : "border-blue-300 bg-white text-black placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-300"
-                              }`}
-                              autoFocus
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditMessage(msg._id);
-                              }}
-                              className="bg-green-500 hover:bg-green-600 active:scale-95 bg-black px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 transform"
-                              title="Save (Enter)"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingMsgId(null);
-                                setEditedText("");
-                              }}
-                              className="bg-gray-500 hover:bg-gray-600 active:scale-95 bg-black px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 transform"
-                              title="Cancel (Esc)"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="break-words">{msg.text}</div>
-                            {msg.edited && (
-                              <span className="text-[10px] ml-1 opacity-60 italic">
-                                (edited)
-                              </span>
-                            )}
-                          </>
-                        )}
-
-                        <div className="text-[11px] text-right mt-1 opacity-70 font-semibold">
-                          {msg.read ? "✓✓ Seen" : "✓ Delivered"}
+                        <div className="text-[10px] text-slate-500 mt-1 px-1">
+                          {msg.read ? "Seen" : "Delivered"}
                         </div>
 
-                        {/* EDIT/DELETE BUTTONS - SHOWN ON HOVER */}
+                        {/* ACTIONS */}
                         {isMine && editingMsgId !== msg._id && (
-                          <div className="absolute -top-8 right-0 flex gap-1 bg-white rounded-lg shadow-lg p-1 opacity-0 group-hover:opacity-100 transition duration-200 border border-gray-200">
+                          <div className="flex gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-1">
                             <button
                               onClick={() => {
                                 setEditingMsgId(msg._id);
                                 setEditedText(msg.text);
                               }}
-                              className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-md text-xs font-bold transition duration-150 flex items-center gap-1"
-                              title="Edit Message"
+                              className="text-[10px] text-slate-400 hover:text-blue-400 transition-colors"
                             >
-                              ✎ Edit
+                              Edit
                             </button>
                             <button
                               onClick={() => handleDeleteMessage(msg._id)}
-                              className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-md text-xs font-bold transition duration-150 flex items-center gap-1"
-                              title="Delete Message"
+                              className="text-[10px] text-slate-400 hover:text-red-400 transition-colors"
                             >
-                              🗑 Delete
+                              Delete
                             </button>
                           </div>
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            {/* INPUT */}
-            <div className="h-20 bg-white border-t border-gray-200 flex items-center gap-3 px-6 shadow-lg">
-              <input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 border-2 border-gray-300 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
-              />
-              <button
-                onClick={handleSendMessage}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-95 text-black px-8 py-3 rounded-full font-bold transition duration-150 transform shadow-md hover:shadow-lg"
-              >
-                Send
-              </button>
-            </div>
-          </>
-        )}
+              {/* INPUT */}
+              <div className="p-4 bg-slate-900 border-t border-slate-800">
+                <div className="flex items-center gap-3 bg-slate-950 border border-slate-700 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all duration-200">
+                  <input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!message.trim()}
+                    className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
 

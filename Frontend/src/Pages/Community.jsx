@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Navbar from "../Components/Navbar";
+import { DashboardLayout } from "../Components/DashboardLayout";
 import { FaHeart, FaComment, FaShare, FaSmile, FaImage, FaVideo, FaTrash, FaPaperclip, FaFilePdf, FaFileWord, FaFileExcel } from "react-icons/fa";
 import socket from "../socket";
 import { ToastContainer, toast } from "react-toastify";
@@ -8,20 +8,20 @@ import "react-toastify/dist/ReactToastify.css";
 
 const Community = () => {
   const token = localStorage.getItem("token");
-const currentUser = localStorage.getItem("user"); 
-const currentUserId = currentUser ? JSON.parse(currentUser)._id : null; 
+  const currentUserId = localStorage.getItem("userId");
+
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-   const [posts, setPosts] = useState([]);
-   const [loadingPosts, setLoadingPosts] = useState(false);
-    const [totalLikes, setTotalLikes] = useState(0);
-   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
-    const [commentText, setCommentText] = useState("");
-    const [commentLoading, setCommentLoading] = useState(false);
-   const [comments, setComments] = useState({});
+
+  const [posts, setPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [comments, setComments] = useState({});
 
 
 
@@ -91,159 +91,152 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
       setLoading(false);
     }
   };
-const [totalUsers, setTotalUsers] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
 
-const getTotalUsers = async () => {
-  try {
-    const res = await fetch(
-      "http://localhost:5001/api/users/count",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  const getTotalUsers = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:5001/api/users/count",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    const data = await res.json();
-    setTotalUsers(data.totalUsers);
-  } catch (err) {
-    console.error(err);
-  }
-};
+      const data = await res.json();
+      setTotalUsers(data.totalUsers);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-useEffect(() => {
-  fetchPosts();
-  getTotalUsers();   // ✅ ADD THIS
-}, []);
-const handleCommentClick = (postId) => {
-  if (activeCommentPostId === postId) {
-    setActiveCommentPostId(null);
-    socket.emit("join-post", postId);
+  useEffect(() => {
+    fetchPosts();
+    getTotalUsers();   // ✅ ADD THIS
+  }, []);
+  const handleCommentClick = (postId) => {
+    if (activeCommentPostId === postId) {
+      setActiveCommentPostId(null);
+      socket.emit("join-post", postId);
 
-  } else {
-    setActiveCommentPostId(postId);
-    fetchComments(postId);
-  }
-};
+    } else {
+      setActiveCommentPostId(postId);
+      fetchComments(postId);
+    }
+  };
 
-const fetchComments = async (postId) => {
-  try {
-    const res = await axios.get(
-      `http://localhost:5001/api/comments/${postId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  const fetchComments = async (postId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5001/api/comments/${postId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    setComments((prev) => ({
-      ...prev,
-      [postId]: res.data,
-    }));
-  } catch (err) {
-    console.error("Failed to fetch comments", err);
-  }
-};
+      setComments((prev) => ({
+        ...prev,
+        [postId]: res.data,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch comments", err);
+    }
+  };
 
-const handleAddComment = async (postId) => {
-  if (!commentText.trim()) return;
+  const handleAddComment = async (postId) => {
+    if (!commentText.trim()) return;
 
-  try {
-    setCommentLoading(true);
+    try {
+      setCommentLoading(true);
 
-    await axios.post(
-      `http://localhost:5001/api/comments/${postId}`,
-      { text: commentText },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+      await axios.post(
+        `http://localhost:5001/api/comments/${postId}`,
+        { text: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    toast.success("Comment added");
-    setCommentText("");
-    fetchComments(postId);
-  } catch (err) {
-    toast.error("Failed to add comment");
-  } finally {
-    setCommentLoading(false);
-  }
-};
-const handleDeleteComment = async (commentId, postId) => {
-  if (!window.confirm("Delete this comment?")) return;
+      toast.success("Comment added");
+      setCommentText("");
+      fetchComments(postId);
+    } catch (err) {
+      toast.error("Failed to add comment");
+    } finally {
+      setCommentLoading(false);
+    }
+  };
 
-  try {
-    await axios.delete(
-      `http://localhost:5001/api/comments/delete/${commentId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-console.log("--------------------------");
+  const handleDeleteComment = async (commentId, postId) => {
+    if (!window.confirm("Delete this comment?")) return;
 
-    toast.success("Comment deleted");
+    try {
+      await axios.delete(
+        `http://localhost:5001/api/comments/delete/${commentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-console.log("Kamani ");
-
-   try {
-    await fetchComments(postId);
-  } catch (fetchErr) {
-    console.error("Fetch failed:", fetchErr);
-  }
-  } catch (err) {
-    toast.error("Delete failed");
-  }
-};
+      toast.success("Comment deleted");
+      fetchComments(postId);
+    } catch (err) {
+      toast.error("Delete failed");
+    }
+  };
 
 
-const handleLike = async (postId) => {
-  try {
-    const res = await axios.post(
-      `http://localhost:5001/api/community/like/${postId}`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  const handleLike = async (postId) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:5001/api/community/like/${postId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    const { liked } = res.data;
+      const { liked } = res.data;
 
+      setPosts((prev) =>
+        prev.map((post) => {
+          if (post._id !== postId) return post;
+
+          const safeLikes = Array.isArray(post.likes) ? post.likes : [];
+
+          return {
+            ...post,
+            likes: liked
+              ? [...safeLikes, currentUserId]
+              : safeLikes.filter((id) => id !== currentUserId),
+          };
+        })
+      );
+      toast.success(liked ? "Post liked" : "Like removed");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to like post");
+    }
+  };
+
+
+
+  socket.on("postLiked", ({ postId, likesCount }) => {
     setPosts((prev) =>
-      prev.map((post) => {
-        if (post._id !== postId) return post;
-
-        const safeLikes = Array.isArray(post.likes) ? post.likes : [];
-
-        return {
-          ...post,
-          likes: liked
-            ? [...safeLikes, currentUserId]
-            : safeLikes.filter((id) => id !== currentUserId),
-        };
-      })
+      prev.map((p) =>
+        p._id === postId ? { ...p, likesCount } : p
+      )
     );
-    toast.success(liked ? "Post liked" : "Like removed");
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to like post");
-  }
-};
-
-
-
-socket.on("postLiked", ({ postId, likesCount }) => {
-  setPosts((prev) =>
-    prev.map((p) =>
-      p._id === postId ? { ...p, likesCount } : p
-    )
-  );
-});
+  });
 
 
   // ================= FETCH POSTS =================
@@ -279,18 +272,17 @@ socket.on("postLiked", ({ postId, likesCount }) => {
 
 
   return (
-    <>
-      <Navbar />
- <ToastContainer
-    position="top-right"
-    autoClose={3000}
-    hideProgressBar={false}
-    newestOnTop
-    closeOnClick
-    pauseOnHover
-    theme="dark"
-  />
-      <div className="w-screen h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white overflow-hidden flex flex-col relative">
+    <DashboardLayout >
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="dark"
+      />
+      <div className="relative">
         {/* Comment Drawer */}
         {activeCommentPostId && (
           <>
@@ -299,9 +291,8 @@ socket.on("postLiked", ({ postId, likesCount }) => {
               onClick={() => setActiveCommentPostId(null)}
             />
 
-            <div className={`fixed top-0 right-0 h-full w-96 bg-gray-900 z-50 transition-transform flex flex-col min-h-0 ${
-              activeCommentPostId ? "translate-x-0" : "translate-x-full"
-            }`}>
+            <div className={`fixed top-0 right-0 h-full w-96 bg-gray-900 z-50 transition-transform flex flex-col min-h-0 ${activeCommentPostId ? "translate-x-0" : "translate-x-full"
+              }`}>
               <div className="p-4 border-b border-gray-700 flex justify-between">
                 <h3 className="text-lg font-bold">Comments</h3>
                 <button onClick={() => setActiveCommentPostId(null)}>✕</button>
@@ -365,18 +356,10 @@ socket.on("postLiked", ({ postId, likesCount }) => {
           </>
         )}
 
-        {/* Header */}
-        <div className="pt-24 px-6 pb-6 border-b border-gray-700">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent mb-2">
-              Community Hub
-            </h1>
-            <p className="text-gray-400">Connect, share, and grow together</p>
-          </div>
-        </div>
+
 
         {/* Main Content - Two Column Layout */}
-        <div className="flex-1 overflow-y-auto flex gap-6 px-6 py-6 max-w-7xl mx-auto w-full">
+        <div className="flex gap-6 max-w-7xl mx-auto w-full items-start">
           {/* Left Column - Create Post & Feed */}
           <div className="flex-1">
             {/* CREATE POST SECTION */}
@@ -517,16 +500,16 @@ socket.on("postLiked", ({ postId, likesCount }) => {
                             Anonymous
                           </span>
                         )}
-                      
-                       {token && (
-  <button
-    onClick={() => handleDeletePost(post._id)}
-    className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition"
-    title="Delete post"
-  >
-    <FaTrash className="text-sm" />
-  </button>
-)}
+
+                        {token && (
+                          <button
+                            onClick={() => handleDeletePost(post._id)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition"
+                            title="Delete post"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        )}
 
                       </div>
                     </div>
@@ -564,26 +547,25 @@ socket.on("postLiked", ({ postId, likesCount }) => {
 
                   {/* Post Footer - Interactions */}
                   <div className="p-4 border-t border-gray-700 flex justify-around items-center bg-gray-900/50">
-              <button
-  onClick={() => handleLike(post._id)}
-  className={`flex items-center gap-2 transition group ${
-    post.likes?.includes(currentUserId)
-      ? "text-red-400"
-      : "text-gray-400 hover:text-red-400"
-  }`}
->
-  <FaHeart className="group-hover:scale-110 transition" />
-  <span className="text-sm">{post.likes?.length || 0}</span>
-</button>
+                    <button
+                      onClick={() => handleLike(post._id)}
+                      className={`flex items-center gap-2 transition group ${post.likes?.includes(currentUserId)
+                        ? "text-red-400"
+                        : "text-gray-400 hover:text-red-400"
+                        }`}
+                    >
+                      <FaHeart className="group-hover:scale-110 transition" />
+                      <span className="text-sm">{post.likes?.length || 0}</span>
+                    </button>
 
 
-                   <button
-                    onClick={() => handleCommentClick(post._id)}
-                    className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition group"
-                  >
-                    <FaComment className="group-hover:scale-110 transition" />
-                    <span className="text-sm">Comment</span>
-                  </button>
+                    <button
+                      onClick={() => handleCommentClick(post._id)}
+                      className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition group"
+                    >
+                      <FaComment className="group-hover:scale-110 transition" />
+                      <span className="text-sm">Comment</span>
+                    </button>
 
                     <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition group">
                       <FaShare className="group-hover:scale-110 transition" />
@@ -638,7 +620,7 @@ socket.on("postLiked", ({ postId, likesCount }) => {
           </div>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 };
 

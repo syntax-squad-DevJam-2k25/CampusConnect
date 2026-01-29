@@ -12,7 +12,7 @@ const Sidebar = () => {
   const handleCourseClick = (course) => {
     setSelectedCourse(course);
   };
-  const handleYearClick = (year)=>
+  const handleYearClick = (year) =>
     setSelectedYear(year);
 
   return (
@@ -29,20 +29,20 @@ const Sidebar = () => {
             <li onClick={() => handleCourseClick("BTECH")}> BTech</li>
           </ul>
           <h2 className="sidebar-title">Year</h2>
-        <ul>
-          <li onClick={() => handleYearClick("All")}>All Years</li>
-          <li onClick={() => handleYearClick("2024")}>2024</li>
-          <li onClick={() => handleYearClick("2025")}>2025</li>
-          <li onClick={() => handleYearClick("2026")}>2026</li>
-          <li onClick={() => handleYearClick("2027")}>2027</li>
-          <li onClick={() => handleYearClick("2028")}>2028</li>
-        </ul>
+          <ul>
+            <li onClick={() => handleYearClick("All")}>All Years</li>
+            <li onClick={() => handleYearClick("2024")}>2024</li>
+            <li onClick={() => handleYearClick("2025")}>2025</li>
+            <li onClick={() => handleYearClick("2026")}>2026</li>
+            <li onClick={() => handleYearClick("2027")}>2027</li>
+            <li onClick={() => handleYearClick("2028")}>2028</li>
+          </ul>
         </div>
 
         <div className="main-content">
           <div className="content-body">
             {selectedPlatform === "codeforces" ? (
-              <CodeforcesLeaderboard  selectedCourse={selectedCourse} selectedYear={selectedYear} />
+              <CodeforcesLeaderboard selectedCourse={selectedCourse} selectedYear={selectedYear} />
             ) : (
               <LeetcodeLeaderboard selectedCourse={selectedCourse} selectedYear={selectedYear} />
             )}

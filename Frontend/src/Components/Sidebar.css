@@ -1,133 +1,100 @@
-.sidebar {
-  position: fixed;
-  top: 60px; 
-  left: 0;
-  width: 220px; 
-  height: 100vh; 
-  background-color: #2c3e50; 
-  color: white;
-  padding: 10px;
-  z-index: 999; 
-  overflow-y: auto; 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  
-}
-.sidebar-title{
-    color:aliceblue;
-    margin-top: 80px;
-}
-.sidebar h2 {
-  font-size: 20px; 
-  font-family: 'Lobster', cursive;
-  text-transform: uppercase;
-  margin-bottom: 15px; 
-  text-align: center;
-}
+/* Sidebar.css - Updated for Dark Theme Dashboard */
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-  margin-top: 4px;
-  display: flex;
-  flex-wrap: wrap; 
-  justify-content: center;
-}
-
-.sidebar ul li.selected {
-  background-color: rgba(255, 117, 140, 0.8) !important; 
-  color: white;
-  font-weight: bold;
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(255, 117, 140, 0.8);
-  border-radius: 20px;
-}
-
-.sidebar ul li {
-  padding: 8px 15px; 
-  font-size: 16px; 
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 5px; 
-  border-radius: 20px; 
-  font-style: oblique;
-  font-family: 'Poppins', sans-serif;
-  text-align: center;
-  background-color: rgba(255, 255, 255, 0.2); 
-}
-
-.sidebar ul li:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(255, 117, 140, 0.5);
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-/* leaderboard css */
-.main-content {
-  margin-left: 240px; 
-  transition: margin-left 0.3s ease; 
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
-
+/* Leaderboard Container - Now uses relative positioning */
 .leaderboard-container {
-  position: fixed;
-  top: 100px; 
-  left: 220px;
-  width: calc(100% - 220px);
-  z-index: 1000; 
-  padding: 10px 0;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  max-height: calc(100vh - 200px); 
-  overflow-y: auto; 
-  background-color: white; 
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
 }
 
+/* Leaderboard Table */
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 18px;
-}
-.leaderboard-table thead {
-  position: sticky; 
-  top: 0px;
-  background-color: #2c3e50;
-  z-index: 999; 
+  font-size: 15px;
 }
 
-.leaderboard-table th, .leaderboard-table td {
-  padding: 10px;
-  text-align: center;
-}
-#codeforces_user .leaderboard-link
-{
-  color:brown;
+.leaderboard-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .leaderboard-table th {
-  background-color: #2c3e50;
-  color: white;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: #e2e8f0;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #475569;
 }
-.leaderboard-table tbody tr:hover {
-  background-color: rgba(44, 62, 80, 0.1);
-  transition: background-color 0.3s ease;
-}
-/* Toggle Button for Switching Platforms */
-.platform-btn {
-  background-color: #222;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: background 0.3s;
-  margin-right: -270px;
-  }
 
-.platform-btn:hover {
-  background-color: #333;
+.leaderboard-table td {
+  padding: 14px 20px;
+  text-align: left;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  color: #cbd5e1;
+}
+
+.leaderboard-table tbody tr {
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.leaderboard-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+}
+
+.leaderboard-table tbody tr:nth-child(even) {
+  background: rgba(30, 41, 59, 0.3);
+}
+
+.leaderboard-table tbody tr:nth-child(even):hover {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
+}
+
+/* Rank Column */
+.leaderboard-table td.rank {
+  font-weight: 700;
+  color: #8b5cf6;
+  font-size: 16px;
+}
+
+/* Username Link */
+.codeforces_user .leaderboard-link,
+.leaderboard-link {
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.codeforces_user .leaderboard-link:hover,
+.leaderboard-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+/* Loading and Error States */
+.leaderboard-container p {
+  color: #94a3b8;
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+}
+
+/* First three ranks special styling */
+.leaderboard-table tbody tr:nth-child(1) td.rank {
+  color: #fbbf24;
+}
+
+.leaderboard-table tbody tr:nth-child(2) td.rank {
+  color: #94a3b8;
+}
+
+.leaderboard-table tbody tr:nth-child(3) td.rank {
+  color: #f97316;
 }

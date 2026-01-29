@@ -1,24 +1,58 @@
-* {
-  box-sizing: border-box;
-}
+/* Login.css - Scoped and Fixed */
 
-body {
+/* Root wrapper to isolate login page styles from global app */
+.login-root {
   background: #f6f5f7;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
   height: 100vh;
-  margin: -20px 0 50px;
+  /* Takes full viewport height */
+  width: 100vw;
+  /* Takes full viewport width */
+  position: fixed;
+  /* Fixes it on top of everything */
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  /* Ensures it's above everything else */
+  overflow: hidden;
 }
 
-h1 {
+.login-root * {
+  box-sizing: border-box;
+}
+
+.login-root h1 {
   font-weight: bold;
   margin: 0;
-  margin-bottom:10px;
+  margin-bottom: 10px;
+  color: #000;
+  /* Ensure visibility */
 }
 
-button {
+/* Scoped Tags */
+.login-root p {
+  font-size: 14px;
+  font-weight: 100;
+  line-height: 20px;
+  letter-spacing: 0.5px;
+  margin: 20px 0 30px;
+}
+
+.login-root span {
+  font-size: 12px;
+}
+
+.login-root a {
+  color: #333;
+  font-size: 14px;
+  text-decoration: none;
+  margin: 15px 0;
+}
+
+.login-root button {
   border-radius: 20px;
   border: 1px solid #18608a;
   background-color: #18608a;
@@ -30,22 +64,23 @@ button {
   text-transform: uppercase;
   transition: transform 80ms ease-in;
   margin-top: 8px;
+  cursor: pointer;
 }
 
-button:active {
+.login-root button:active {
   transform: scale(0.95);
 }
 
-button:focus {
+.login-root button:focus {
   outline: none;
 }
 
-button.ghost {
+.login-root button.ghost {
   background-color: transparent;
   border-color: #ffffff;
 }
 
-form {
+.login-root form {
   background-color: #ffffff;
   display: flex;
   align-items: center;
@@ -54,89 +89,79 @@ form {
   padding: 0 50px;
   height: 100%;
   text-align: center;
-  margin-top:-70px;
+  /* Removed negative margin causing issues */
 }
 
-input {
+.login-root input {
   background-color: #eee;
   border: none;
   padding: 12px 15px;
   margin: 8px 0;
   width: 100%;
-}
-
-.password-container {
-  position: relative;
-  width: 100%;
-}
-
-.password-container input {
-  width: 100%;
-  padding-right: 40px;
-}
-
-select {
-  background-color: #eee;
-  border: none;
-  padding: 12px 15px;
-  margin: 8px 0;
-  width: 100%;
-  appearance: none; 
-  border-radius: 5px; 
-  font-size: 16px; 
-  color: #555; 
-  cursor: pointer;
-}
-
-
-select:focus {
-  outline: none;
-  box-shadow: 0 0 3px #18608a; 
-}
-
-option {
+  border-radius: 5px;
   color: #333;
 }
 
+.login-root select {
+  background-color: #eee;
+  border: none;
+  padding: 12px 15px;
+  margin: 8px 0;
+  width: 100%;
+  appearance: none;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
 
-.container {
+.login-root select:focus {
+  outline: none;
+  box-shadow: 0 0 3px #18608a;
+}
+
+.login-root option {
+  color: #333;
+}
+
+/* Main Container (Renamed from .container) */
+.login-page-container {
   background-color: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25),0 10px 10px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
   position: relative;
   overflow: hidden;
   width: 768px;
   max-width: 100%;
   min-height: 600px;
+  color: #333;
 }
 
 .form-container {
   position: absolute;
-  top: 50%;
-  left: 0;
-  opacity: 1;
-  transform: translateY(-50%);
-  transition: transform 0.6s ease-in-out;
+  top: 0;
+  height: 100%;
+  transition: all 0.6s ease-in-out;
 }
 
 .sign-in-container {
+  left: 0;
   width: 50%;
   z-index: 2;
 }
 
-.container.right-panel-active .sign-in-container {
+.login-page-container.right-panel-active .sign-in-container {
   transform: translateX(100%);
 }
 
 .sign-up-container {
-  position: absolute;
-  top: 20%; 
-  left: 50%; 
-  opacity: 1;
+  left: 0;
   width: 50%;
-  z-index: 5;
+  opacity: 0;
+  z-index: 1;
 }
-.container .right-panel-active .sign-up-container {
+
+.login-page-container.right-panel-active .sign-up-container {
   transform: translateX(100%);
   opacity: 1;
   z-index: 5;
@@ -144,13 +169,17 @@ option {
 }
 
 @keyframes show {
-  0%, 49.99% {
-      opacity: 0;
-      z-index: 1;
+
+  0%,
+  49.99% {
+    opacity: 0;
+    z-index: 1;
   }
-  50%, 100% {
-      opacity: 1;
-      z-index: 5;
+
+  50%,
+  100% {
+    opacity: 1;
+    z-index: 5;
   }
 }
 
@@ -165,12 +194,14 @@ option {
   z-index: 100;
 }
 
-.container.right-panel-active .overlay-container {
+.login-page-container.right-panel-active .overlay-container {
   transform: translateX(-100%);
 }
 
 .overlay {
   background: #222529;
+  background: -webkit-linear-gradient(to right, #2c3e50, #4ca1af);
+  background: linear-gradient(to right, #2c3e50, #4ca1af);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: 0 0;
@@ -183,7 +214,7 @@ option {
   transition: transform 0.6s ease-in-out;
 }
 
-.container.right-panel-active .overlay {
+.login-page-container.right-panel-active .overlay {
   transform: translateX(50%);
 }
 
@@ -206,78 +237,17 @@ option {
   transform: translateX(-20%);
 }
 
-.container.right-panel-active .overlay-left {
+.login-page-container.right-panel-active .overlay-left {
   transform: translateX(0);
 }
 
 .overlay-right {
   right: 0;
-  transform: translateX(0); 
- 
-}
-.overlay-right p{
-  display: block;
-}
-
-.container.right-panel-active .overlay-right {
-  transform: translateX(-20%);
-}
-
-.container.right-panel-active .overlay-container p{
-  display: none;
-}
-
-.container.right-panel-active .form-container {
   transform: translateX(0);
 }
 
-.container .right-panel-active .form-container.sign-up-container {
-  transform: translateX(-100%);
-}
-
-.container .right-panel-active .overlay-container {
-  transform: translateX(0);
-}
-.overlay-left {
-  transform: translateX(-20%);
-}
-
-.container.right-panel-active .overlay-left {
-  transform: translateX(0);
-}
-.overlay-left p {
-  display: none; 
-}
-
-.container.right-panel-active .overlay-left p {
-  display: block;
-} 
-.overlay-right {
-  right: 0;
-  transform: translateX(0); 
-}
-
-.container.right-panel-active .overlay-right {
-  transform: translateX(-20%);
-}
-
-.container.right-panel-active .overlay-container {
-  transform: translateX(-100%);
-}
-
-.container.right-panel-active .form-container {
-  transform: translateX(0);
-}
-
-.container .right-panel-active .form-container.sign-up-container {
-  transform: translateX(-100%);
-}
-
-.container .right-panel-active .overlay-container {
-  transform: translateX(0);
-}
-.form-container.hidden {
-  display: none;
+.login-page-container.right-panel-active .overlay-right {
+  transform: translateX(20%);
 }
 
 .switch-btn {
@@ -287,12 +257,15 @@ option {
   padding: 10px 20px;
   margin-top: 20px;
   margin-left: 28%;
-  
   cursor: pointer;
+  display: none;
+  /* Hidden by default on desktop, shown on mobile */
 }
-.switch-btn.Login{
+
+.switch-btn.Login {
   margin-left: 32%;
 }
+
 .switch-btn:hover {
   background: #18608a;
   color: #fff;
@@ -301,41 +274,49 @@ option {
 .form-container.hidden {
   display: none;
 }
-.switch-btn {
-  display: none;
-}
+
+/* Mobile Responsiveness */
 @media only screen and (max-width: 768px) {
-  .container {
-      border-radius: 0;
-      box-shadow: none;
-      width: 100%;
-      
+  .login-page-container {
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    min-height: 100vh;
   }
 
   .overlay-container {
-      display: none;
+    display: none;
   }
+
   .switch-btn {
-      display: block;
+    display: block;
+    position: relative;
+    margin: 20px auto;
+    width: fit-content;
   }
+
   .form-container {
-      position: relative;
-      top: 38px;
-      left: auto;
-      transform: none;
-      width: 100%;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  .sign-in-container, .sign-up-container {
-      width: 100%;
+  .sign-in-container,
+  .sign-up-container {
+    width: 100%;
+    position: relative;
+    opacity: 1;
+    z-index: 1;
   }
 
-  .overlay-panel {
-      width: 100%;
-      transform: none;
-  }
-
-  .overlay-right {
-      transform: none;
+  /* Hide the inactive form totally on mobile using state classes passed from JS */
+  .form-container.hidden {
+    display: none;
   }
 }

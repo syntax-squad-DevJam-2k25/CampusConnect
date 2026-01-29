@@ -4,7 +4,7 @@ export const getLoggedUser = async () => {
   try {
     const response = await axiosInstance.get("api/users/get-logged-user");
     console.log("Logged user response:", response);
-    
+
     // ✅ Always return a plain object
     return { user: response.data.data, errorMessage: null };
   } catch (error) {

@@ -48,6 +48,9 @@ const Community = () => {
     }
   };
 
+
+
+
   // ================= CREATE POST =================
   const handlePost = async () => {
     if (!content && !file) {
@@ -302,14 +305,13 @@ const Community = () => {
               <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                 {comments[activeCommentPostId]?.length > 0 ? (
                   comments[activeCommentPostId].map((comment) => (
-                  
                     <div
                       key={comment._id}
                       className="bg-gray-800 p-3 rounded-lg"
                     >
                       <div className="flex justify-between">
                         <p className="font-semibold">{comment.username}</p>
-    
+
                         {comment.userId === currentUserId && (
                           <FaTrash
                             className="cursor-pointer text-red-400"

@@ -25,22 +25,7 @@ router.get("/:postId", getCommentsByPost);
 router.put("/edit/:commentId", authMiddleware, updateComment);
 
 // Delete comment
-router.delete(
-  "/delete/:commentId",
-  (req, res, next) => {
-    console.log("🚨 DELETE /comments/delete HIT");
-    console.log("🔹 Params:", req.params);
-    console.log("🔹 Headers Authorization:", req.headers.authorization);
-    next();
-  },
-  authMiddleware,
-  (req, res, next) => {
-    console.log("✅ Auth Middleware Passed");
-    console.log("👤 Auth User:", req.user);
-    next();
-  },
-  deleteComment
-);
+router.delete("/delete/:commentId", authMiddleware, deleteComment);
 
 /* ================= REPLIES ================= */
 

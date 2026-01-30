@@ -8,7 +8,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 const Community = () => {
   const token = localStorage.getItem("token");
-  const currentUserId = localStorage.getItem("userId");
+  const currentUser = localStorage.getItem("user"); 
+const currentUserId = currentUser ? JSON.parse(currentUser)._id : null; 
 
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);

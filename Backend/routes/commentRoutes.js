@@ -22,7 +22,8 @@ router.post("/:postId", authMiddleware, createComment);
 router.get("/:postId", getCommentsByPost);
 
 // Edit comment
-router.put("/edit/:commentId", authMiddleware, updateComment);
+router.put("/edit/:commentId",  authMiddleware, updateComment);
+
 
 // Delete comment
 router.delete("/delete/:commentId", authMiddleware, deleteComment);

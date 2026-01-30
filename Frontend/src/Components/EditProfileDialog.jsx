@@ -22,16 +22,16 @@ import {
 import { Upload, Github, Linkedin, Code2, User, GraduationCap, Sparkles } from "lucide-react";
 
 // Predefined tags
-const TAGS = [
-    "DSA", "CP", "Web Dev", "App Dev", "Machine Learning",
-    "Artificial Intelligence", "DevOps", "Cloud", "Cyber Security", "Blockchain"
-];
+const TAGS =
+    ["DSA", "CP", "DP", "Graph", "Tree", "Greedy", "BinarySearch", "Recursion", "BitManipulation", "LeetCode", "Codeforces", "CodeChef", "GFG", "CSES", "JS", "Node", "SpringBoot", "Django", "RestAPI", "SystemDesign", "React", "MySQL", "MongoDB", "Android", "Flutter", "ML", "DL", "OpenCV", "NLP", "Docker", "CI_CD", "AWS", "CyberSecurity", "Blockchain"];
 
-const BRANCHES = ["CSE", "ECE", "EEE", "MECH", "CIVIL", "MCA", "MBA", "BCA", "BBA"];
-const YEARS = ["2024", "2025", "2026", "2027", "2028"];
+const BRANCHES = ["CSE", "IT", "ECE", "EEE", "MECH", "CIVIL", "MCA", "MBA"];
+const YEARS = ["2025", "2026", "2027", "2028", "2029"];
 
 export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate }) {
+    const fileInputRef = React.useRef(null);
     const [formData, setFormData] = useState({
+        // ... (keep existing initial state, which is fine)
         name: "",
         college: "",
         branch: "",
@@ -96,9 +96,9 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 }
             });
 
-            const fileInput = document.getElementById('profile-image-input');
-            if (fileInput && fileInput.files[0]) {
-                fd.append("profileImage", fileInput.files[0]);
+            // Use ref to get the file
+            if (fileInputRef.current && fileInputRef.current.files[0]) {
+                fd.append("profileImage", fileInputRef.current.files[0]);
             }
 
             const res = await fetch("http://localhost:5001/api/users/update-profile", {
@@ -119,6 +119,9 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
             setLoading(false);
         }
     };
+
+    // ... (render return)
+
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -231,6 +234,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                             </Label>
                             <Input
                                 id="profile-image-input"
+                                ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
                                 className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-600 file:text-white hover:file:bg-violet-700 file:cursor-pointer file:transition-all bg-slate-900/80 border-slate-600 text-slate-400"

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, Users } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Users, UserPlus } from "lucide-react";
 import {
     SidebarMenu,
     SidebarMenuButton,

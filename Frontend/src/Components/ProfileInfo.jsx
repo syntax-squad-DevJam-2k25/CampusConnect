@@ -21,7 +21,7 @@ export function ProfileInfo({ profile, leetcode, codeforces }) {
                 <div className="bg-slate-900/80 border border-slate-700/50 rounded-xl p-6 text-center space-y-4 shadow-xl">
                     <div className="relative inline-block">
                         <img
-                            src={profile.profileImage || "/default-avatar.png"}
+                            src={profile.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`}
                             className="w-32 h-32 mx-auto rounded-full border-4 border-violet-500 object-cover shadow-lg shadow-violet-500/20"
                             alt="profile"
                         />

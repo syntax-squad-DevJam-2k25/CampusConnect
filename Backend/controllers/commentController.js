@@ -1,4 +1,3 @@
-// controllers/commentController.js
 import Comment from "../models/Comment.js";
 import { getIO } from "../config/socket.js";
 
@@ -122,10 +121,19 @@ export const deleteComment = async (req, res) => {
     }
 
     await comment.deleteOne();
-
-    res.json({ message: "Comment deleted", commentId });
-
+     console.log(`Comment ${comment.postId} deleted successfully`);
+    
+const io = getIO();
+ console.log("io exists:", !!io);
     io.to(comment.postId.toString()).emit("comment_deleted", commentId);
+
+
+return res.status(200).json({
+  success: true,
+  message: "Comment deleted",
+  commentId
+});
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

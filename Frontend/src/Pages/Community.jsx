@@ -23,12 +23,31 @@ import "react-toastify/dist/ReactToastify.css";
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [comments, setComments] = useState({});
-const [editingCommentId, setEditingCommentId] = useState(null);
-const [editText, setEditText] = useState("");
-const [editLoading, setEditLoading] = useState(false);
-const [replyingTo, setReplyingTo] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+ const [replyingTo, setReplyingTo] = useState(null);
 const [replyText, setReplyText] = useState("");
 const [showReplies, setShowReplies] = useState({});
+const [filter, setFilter] = useState(null);
+const [showModal, setShowModal] = useState(false);
+const [selectedImage, setSelectedImage] = useState(null);
+
+  const filteredPosts = filter ? posts.filter(post => post.content && post.content.toLowerCase().includes(filter.toLowerCase())) : posts;
+
+  const renderContent = (content) => {
+    if (!content) return null;
+    return content.split(' ').map((word, index) => {
+      if (word.startsWith('#')) {
+        return <span key={index} className="text-blue-400 font-semibold">{word}</span>;
+      }
+      return word + ' ';
+    });
+  };
+
+  const getTagCount = (tag) => {
+    return posts.filter(post => post.content && post.content.toLowerCase().includes(tag.toLowerCase())).length;
+  };
 
 
 
@@ -59,6 +78,10 @@ const [showReplies, setShowReplies] = useState({});
   const handlePost = async () => {
     if (!content && !file) {
       toast.warning("Please write something or upload a file");
+      return;
+    }
+
+    if (!window.confirm("Once posted, you cannot edit this post. Are you sure you want to post?")) {
       return;
     }
 
@@ -424,7 +447,7 @@ const handleEditComment = async (commentId) => {
                           </div>
                         </>
                       ) : (
-                        <p className="text-sm mt-1">{comment.text}</p>
+                        <p className="text-sm mt-1">{renderContent(comment.text)}</p>
                       )}
                       <div className="flex gap-2 mt-2">
                         <button
@@ -505,7 +528,7 @@ const handleEditComment = async (commentId) => {
                                       )}
                                       <p className="font-semibold text-sm">{reply.userId?.username}</p>
                                     </div>
-                                    <p className="text-sm mt-1">{reply.text}</p>
+                                    <p className="text-sm mt-1">{renderContent(reply.text)}</p>
                                     <p className="text-xs text-gray-400 mt-1">
                                       {new Date(reply.createdAt).toLocaleString()}
                                     </p>
@@ -664,15 +687,15 @@ const handleEditComment = async (commentId) => {
                 </div>
               )}
 
-              {!loadingPosts && posts.length === 0 && (
+              {!loadingPosts && filteredPosts.length === 0 && (
                 <div className="text-center py-16 bg-gray-800 rounded-xl border border-gray-700">
                   <p className="text-gray-400 text-lg">
-                    No posts yet. Be the first to share! 🚀
+                    {filter ? `No posts with ${filter}. Try another filter!` : "No posts yet. Be the first to share! 🚀"}
                   </p>
                 </div>
               )}
 
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <div
                   key={post._id}
                   className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg border border-gray-700 overflow-hidden hover:border-green-400 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-green-400/20"
@@ -726,7 +749,7 @@ const handleEditComment = async (commentId) => {
                   <div className="p-5">
                     {post.content && (
                       <p className="text-gray-200 leading-relaxed text-base">
-                        {post.content}
+                        {renderContent(post.content)}
                       </p>
                     )}
 
@@ -737,7 +760,8 @@ const handleEditComment = async (commentId) => {
                           <img
                             src={post.media.url}
                             alt="post"
-                            className="w-full h-auto max-h-96 object-cover hover:scale-105 transition-transform duration-300"
+                            className="w-full h-auto max-h-96 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                            onClick={() => { setSelectedImage(post.media.url); setShowModal(true); }}
                           />
                         )}
 
@@ -794,14 +818,27 @@ const handleEditComment = async (commentId) => {
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <span className="text-2xl">🔥</span> Trending
               </h2>
+              <button
+                onClick={() => setFilter(null)}
+                className={`w-full p-3 mb-3 rounded-lg cursor-pointer transition ${!filter ? 'bg-green-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
+              >
+                <p className="font-semibold text-sm">All Posts ({posts.length})</p>
+              </button>
               <div className="space-y-3">
-                {["Campus Life", "Study Tips", "Projects", "Events", "News"].map(
+                {[
+                  { label: "Campus Life", tag: "#Campus" },
+                  { label: "Study Tips", tag: "#Study" },
+                  { label: "Projects", tag: "#Project" },
+                  { label: "Events", tag: "#Event" },
+                  { label: "News", tag: "#News" }
+                ].map(
                   (trend, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg cursor-pointer transition"
+                      onClick={() => setFilter(trend.tag)}
+                      className={`p-3 rounded-lg cursor-pointer transition ${filter === trend.tag ? 'bg-green-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
                     >
-                      <p className="font-semibold text-sm">#{trend}</p>
+                      <p className="font-semibold text-sm">{trend.label} ({getTagCount(trend.tag)})</p>
                       <p className="text-xs text-gray-400">Trending Now</p>
                     </div>
                   )
@@ -830,6 +867,13 @@ const handleEditComment = async (commentId) => {
           </div>
         </div>
       </div>
+
+      {/* Image Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
+          <img src={selectedImage} alt="Full view" className="max-w-full max-h-full object-contain" />
+        </div>
+      )}
     </DashboardLayout>
   );
 };

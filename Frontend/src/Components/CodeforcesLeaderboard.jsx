@@ -12,7 +12,7 @@ const CodeforcesLeaderboard = ({ selectedCourse, selectedYear }) => {
   useEffect(() => {
     const fetchRatings = async () => {
       try {
-        const token = localStorage.getItem("token");  
+        const token = localStorage.getItem("token");
         const response = await fetch("http://localhost:5001/api/users/get-all-users", {
           method: "GET",
           headers: {
@@ -65,13 +65,15 @@ const CodeforcesLeaderboard = ({ selectedCourse, selectedYear }) => {
         </thead>
         <tbody>
           {filteredUsers
-            .sort((a, b) => b.codeforcesRating - a.codeforcesRating)
+            .sort((a, b) => (b.codeforcesRating || 0) - (a.codeforcesRating || 0))
             .map((user, index) => (
               <tr key={user._id}>
-                <td id="rank">{index + 1}</td>
-                <td id="codeforces_user">
+                <td className="rank">
+                  {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+                </td>
+                <td className="codeforces_user">
                   <Link
-                  to={`/u/${user._id}`}
+                    to={`/u/${user._id}`}
                     rel="noopener noreferrer"
                     className="leaderboard-link"
                   >

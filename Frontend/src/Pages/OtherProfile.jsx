@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import LoadingPage from "../Components/LoadingPage";
-import Navbar from "../Components/Navbar";
-import Footer from "../Components/Footer";
+import { DashboardLayout } from "../Components/DashboardLayout";
 
 function OtherProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [leetcodeData, setLeetcodeData] = useState(null);
   const [codeforcesData, setCodeforcesData] = useState(null);
@@ -98,26 +98,30 @@ function OtherProfile() {
     fetchAll();
   }, [id]);
 
-  if (loading) return <LoadingPage />;
+  if (loading) return (
+    <DashboardLayout title="👤 User Profile" subtitle="View coding profiles and stats">
+      <LoadingPage />
+    </DashboardLayout>
+  );
 
   if (error)
     return (
-      <p className="text-center text-red-500 mt-32 text-lg">{error}</p>
+      <DashboardLayout title="👤 User Profile" subtitle="View coding profiles and stats">
+        <p className="text-center text-red-500 mt-32 text-lg">{error}</p>
+      </DashboardLayout>
     );
 
   return (
-    <>
-      <Navbar />
-
-      <div className="flex flex-col min-h-screen bg-gray-950 text-white">
+    <DashboardLayout title="👤 User Profile" subtitle="View coding profiles and stats">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white">
         <main className="flex-grow px-6 pt-28 pb-32">
-          <h1 className="text-3xl font-bold text-center mb-12">
+          <h1 className="text-3xl font-bold text-center mb-12 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
             Coding Profiles
           </h1>
 
    {/* ================= USER BASIC PROFILE ================= */}
 {userProfile && (
-  <div className="max-w-4xl mx-auto mb-14 bg-gray-900 rounded-2xl p-6 shadow-lg">
+  <div className="max-w-4xl mx-auto mb-14 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-700">
     <div className="flex flex-col sm:flex-row items-center gap-6">
       
       {/* Profile Image (optional) */}
@@ -179,6 +183,13 @@ function OtherProfile() {
               Resume not uploaded
             </span>
           )}
+
+          <button
+            onClick={() => navigate('/chat')}
+            className="bg-purple-600 hover:bg-purple-700 px-5 py-2 rounded-lg transition"
+          >
+            Message
+          </button>
         </div>
       </div>
     </div>
@@ -190,7 +201,7 @@ function OtherProfile() {
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
 
             {/* ========== LeetCode ========== */}
-            <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-700">
               <h2 className="text-2xl font-semibold text-yellow-400 mb-4 text-center">
                 LeetCode Profile
               </h2>
@@ -222,7 +233,7 @@ function OtherProfile() {
             </div>
 
             {/* ========== Codeforces ========== */}
-            <div className="bg-gray-900 rounded-2xl p-6 shadow-lg">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-700">
               <h2 className="text-2xl font-semibold text-blue-400 mb-4 text-center">
                 Codeforces Profile
               </h2>
@@ -269,10 +280,8 @@ function OtherProfile() {
             </div>
           </div>
         </main>
-
-        <Footer />
       </div>
-    </>
+    </DashboardLayout>
   );
 }
 

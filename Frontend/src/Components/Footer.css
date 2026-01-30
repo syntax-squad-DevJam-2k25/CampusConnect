@@ -1,5 +1,5 @@
 .footer {
-    background-color: #292c2f;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
     color: white;
     height: 80px; 
     display: flex;

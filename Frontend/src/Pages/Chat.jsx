@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "../Components/DashboardLayout";
 import socket from "../socket"; // socket.io-client file
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function Chat() {
 
@@ -144,6 +146,8 @@ function Chat() {
     setEditedText("");
   };
   const handleDeleteMessage = async (msgId) => {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+
     await fetch("http://localhost:5001/api/chat/delete-message", {
       method: "DELETE",
       headers: {
@@ -155,6 +159,8 @@ function Chat() {
         messageId: msgId,
       }),
     });
+
+    toast.success("Message deleted successfully");
   };
 
 
@@ -190,7 +196,14 @@ function Chat() {
         {/* SIDEBAR */}
         <div className="w-80 border-r border-slate-800 bg-slate-900 overflow-y-auto">
           <div className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Contacts</h2>
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Contacts</h2>
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-800 text-slate-300 placeholder-slate-500 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
           {filteredUsers.map((u) => (
             <div
@@ -368,6 +381,15 @@ function Chat() {
           )}
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="dark"
+      />
     </DashboardLayout>
   );
 }

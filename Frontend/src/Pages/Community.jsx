@@ -217,7 +217,7 @@ const cancelEdit = () => {
 };
 const handleEditComment = async (commentId) => {
   if (!editText.trim()) return;
-  console.log("Editing comment:", commentId, editText); 
+  
 
   try {
     setEditLoading(true);
@@ -295,7 +295,7 @@ const handleEditComment = async (commentId) => {
       )
     );
   });
-console.log(comments);  
+
 
   // ================= FETCH POSTS =================
   const fetchPosts = async () => {
@@ -645,7 +645,7 @@ console.log(comments);
                   <button
                     onClick={handlePost}
                     disabled={loading}
-                    className="px-6 py-2 bg-gradient-to-r from-green-400 to-cyan-400 text-black rounded-full font-bold hover:shadow-lg hover:shadow-green-400/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full font-bold hover:shadow-lg hover:shadow-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? "Posting..." : "Post"}
                   </button>

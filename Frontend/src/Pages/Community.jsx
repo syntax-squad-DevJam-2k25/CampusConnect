@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../Components/DashboardLayout";
-import { FaHeart, FaComment, FaShare, FaSmile, FaImage, FaVideo, FaTrash, FaPaperclip, FaFilePdf, FaFileWord, FaFileExcel } from "react-icons/fa";
+import { FaHeart, FaComment, FaShare, FaSmile, FaImage, FaVideo, FaTrash, FaPaperclip, FaFilePdf, FaFileWord, FaFileExcel, FaReply, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import socket from "../socket";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
   const Community = () => {
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const currentUser = localStorage.getItem("user"); 
   const currentUserId = currentUser ? JSON.parse(currentUser)._id : null; 
@@ -24,6 +26,9 @@ import "react-toastify/dist/ReactToastify.css";
 const [editingCommentId, setEditingCommentId] = useState(null);
 const [editText, setEditText] = useState("");
 const [editLoading, setEditLoading] = useState(false);
+const [replyingTo, setReplyingTo] = useState(null);
+const [replyText, setReplyText] = useState("");
+const [showReplies, setShowReplies] = useState({});
 
 
 
@@ -148,15 +153,16 @@ const [editLoading, setEditLoading] = useState(false);
     }
   };
 
-  const handleAddComment = async (postId) => {
-    if (!commentText.trim()) return;
+  const handleAddComment = async (postId, parentId = null) => {
+    const text = parentId ? replyText : commentText;
+    if (!text.trim()) return;
 
     try {
       setCommentLoading(true);
 
       await axios.post(
         `http://localhost:5001/api/comments/${postId}`,
-        { text: commentText },
+        { text, parentId },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -164,8 +170,14 @@ const [editLoading, setEditLoading] = useState(false);
         }
       );
 
-      toast.success("Comment added");
-      setCommentText("");
+      toast.success(parentId ? "Reply added" : "Comment added");
+      if (parentId) {
+        setReplyText("");
+        setReplyingTo(null);
+        setShowReplies(prev => ({...prev, [parentId]: true}));
+      } else {
+        setCommentText("");
+      }
       fetchComments(postId);
     } catch (err) {
       toast.error("Failed to add comment");
@@ -413,6 +425,103 @@ console.log(comments);
                         </>
                       ) : (
                         <p className="text-sm mt-1">{comment.text}</p>
+                      )}
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => {
+                            if (replyingTo === comment._id) {
+                              setReplyingTo(null);
+                              setReplyText("");
+                            } else {
+                              setReplyingTo(comment._id);
+                              setReplyText("");
+                            }
+                          }}
+                          className="text-blue-400 text-xs hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <FaReply className="text-xs" />
+                          Reply
+                        </button>
+                      </div>
+                      {replyingTo === comment._id && (
+                        <div className="mt-2">
+                          <textarea
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            className="w-full bg-gray-700 text-white p-2 rounded placeholder-gray-400"
+                            placeholder="Write a reply..."
+                            rows={2}
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleAddComment(activeCommentPostId, comment._id)}
+                              disabled={commentLoading}
+                              className="bg-green-500 px-3 py-1 rounded text-sm"
+                            >
+                              Reply
+                            </button>
+                            <button
+                              onClick={() => {
+                                setReplyingTo(null);
+                                setReplyText("");
+                              }}
+                              className="bg-gray-500 px-3 py-1 rounded text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Replies */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="mt-2">
+                          {!showReplies[comment._id] ? (
+                            <button
+                              onClick={() => setShowReplies(prev => ({...prev, [comment._id]: true}))}
+                              className="text-blue-400 text-xs hover:text-blue-300 flex items-center gap-1"
+                            >
+                              <FaChevronDown className="text-xs" />
+                              Show {comment.replies.length} replies
+                            </button>
+                          ) : (
+                            <>
+                              <div className="mt-3 ml-6 space-y-2">
+                                {comment.replies.map((reply) => (
+                                  <div
+                                    key={reply._id}
+                                    className="bg-gray-700 p-2 rounded-lg"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {reply.userId?.profileImage ? (
+                                        <img
+                                          src={`http://localhost:5001/${reply.userId.profileImage}`}
+                                          alt="profile"
+                                          className="w-6 h-6 rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-cyan-400 flex items-center justify-center font-bold text-black text-xs">
+                                          {reply.userId?.username?.charAt(0) || "U"}
+                                        </div>
+                                      )}
+                                      <p className="font-semibold text-sm">{reply.userId?.username}</p>
+                                    </div>
+                                    <p className="text-sm mt-1">{reply.text}</p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {new Date(reply.createdAt).toLocaleString()}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                              <button
+                                onClick={() => setShowReplies(prev => ({...prev, [comment._id]: false}))}
+                                className="text-blue-400 text-xs hover:text-blue-300 mt-2 flex items-center gap-1"
+                              >
+                                <FaChevronUp className="text-xs" />
+                                Hide replies
+                              </button>
+                            </>
+                          )}
+                        </div>
                       )}
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(comment.createdAt).toLocaleString()}
@@ -662,12 +771,15 @@ console.log(comments);
                       className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition group"
                     >
                       <FaComment className="group-hover:scale-110 transition" />
-                      <span className="text-sm">Comment</span>
+                      <span className="text-sm">Comment ({comments[post._id]?.length || 0})</span>
                     </button>
 
-                    <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition group">
+                    <button 
+                      onClick={() => navigate('/chat', { state: { sharedPostId: post._id } })}
+                      className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition group"
+                    >
                       <FaShare className="group-hover:scale-110 transition" />
-                      <span className="text-sm">Share</span>
+                      <span className="text-sm">Message</span>
                     </button>
                   </div>
                 </div>

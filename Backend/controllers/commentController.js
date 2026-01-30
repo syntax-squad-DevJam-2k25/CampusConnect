@@ -23,6 +23,7 @@ export const createComment = async (req, res) => {
       text: comment.text,
       username: comment.userId.name,
       userId: comment.userId._id,
+       profileImage: comment.userId.profileImage,
       createdAt: comment.createdAt,
       replies: [],
       reactions: [],
@@ -72,10 +73,11 @@ export const getCommentsByPost = async (req, res) => {
 
 /* ================= UPDATE COMMENT ================= */
 export const updateComment = async (req, res) => {
+  console.log("Update comment function reached");
   try {
     const { commentId } = req.params;
     const { text } = req.body;
-
+  console.log("Update comment called");
     const comment = await Comment.findById(commentId);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
@@ -96,15 +98,17 @@ export const updateComment = async (req, res) => {
       replies: comment.replies,
       reactions: comment.reactions,
     };
-
-    res.json(formattedComment);
-
+   
+ const io = getIO();
     io.to(comment.postId.toString()).emit(
       "comment_updated",
       formattedComment
     );
+
+    return res.json(formattedComment);
+  
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Edit error:", err);
   }
 };
 

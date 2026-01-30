@@ -6,16 +6,14 @@ import socket from "../socket";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const Community = () => {
+  const Community = () => {
   const token = localStorage.getItem("token");
   const currentUser = localStorage.getItem("user"); 
-const currentUserId = currentUser ? JSON.parse(currentUser)._id : null; 
-
+  const currentUserId = currentUser ? JSON.parse(currentUser)._id : null; 
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [totalLikes, setTotalLikes] = useState(0);
@@ -23,6 +21,9 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
   const [commentText, setCommentText] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [comments, setComments] = useState({});
+const [editingCommentId, setEditingCommentId] = useState(null);
+const [editText, setEditText] = useState("");
+const [editLoading, setEditLoading] = useState(false);
 
 
 
@@ -48,9 +49,6 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
       }
     }
   };
-
-
-
 
   // ================= CREATE POST =================
   const handlePost = async () => {
@@ -196,6 +194,50 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
     }
   };
 
+const startEditing = (comment) => {
+  setEditingCommentId(comment._id);
+  setEditText(comment.text);
+};
+
+const cancelEdit = () => {
+  setEditingCommentId(null);
+  setEditText("");
+};
+const handleEditComment = async (commentId) => {
+  if (!editText.trim()) return;
+  console.log("Editing comment:", commentId, editText); 
+
+  try {
+    setEditLoading(true);
+
+    const res = await axios.put(
+      `http://localhost:5001/api/comments/edit/${commentId}`,
+      { text: editText },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const updatedComment = res.data;
+
+    // update UI instantly without refetch
+    setComments((prev) => ({
+      ...prev,
+      [activeCommentPostId]: prev[activeCommentPostId].map((c) =>
+        c._id === commentId ? updatedComment : c
+      ),
+    }));
+
+    cancelEdit();
+    toast.success("Comment updated");
+  } catch (err) {
+    toast.error("Edit failed");
+  } finally {
+    setEditLoading(false);
+  }
+};
 
   const handleLike = async (postId) => {
     try {
@@ -241,7 +283,7 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
       )
     );
   });
-
+console.log(comments);  
 
   // ================= FETCH POSTS =================
   const fetchPosts = async () => {
@@ -310,24 +352,68 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
                       key={comment._id}
                       className="bg-gray-800 p-3 rounded-lg"
                     >
-                      <div className="flex justify-between">
-                        <p className="font-semibold">{comment.username}</p>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {comments.userId?.profileImage ? (
+                           <img
+  src={`http://localhost:5001/${comment.profileImage}`}
+  alt="profile"
+  className="w-8 h-8 rounded-full object-cover"
+/>
 
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-cyan-400 flex items-center justify-center font-bold text-black text-sm">
+                              {comment.username?.charAt(0) || "U"}
+                            </div>
+                          )}
+                          <p className="font-semibold">{comment.username}</p>
+                        </div>
                         {comment.userId === currentUserId && (
-                          <FaTrash
-                            className="cursor-pointer text-red-400"
-                            onClick={() =>
-                              handleDeleteComment(
-                                comment._id,
-                                activeCommentPostId
-                              )
-                            }
-                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => startEditing(comment)}
+                              className="text-blue-400 text-xs"
+                            >
+                              Edit
+                            </button>
+                            <FaTrash
+                              className="cursor-pointer text-red-400"
+                              onClick={() =>
+                                handleDeleteComment(
+                                  comment._id,
+                                  activeCommentPostId
+                                )
+                              }
+                            />
+                          </div>
                         )}
                       </div>
-
-                      <p className="text-sm mt-1">{comment.text}</p>
-
+                      {editingCommentId === comment._id ? (
+                        <>
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="w-full bg-gray-700 text-white p-2 rounded mt-2"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleEditComment(comment._id)}
+                              disabled={editLoading}
+                              className="bg-green-500 px-3 py-1 rounded text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="bg-gray-500 px-3 py-1 rounded text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm mt-1">{comment.text}</p>
+                      )}
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(comment.createdAt).toLocaleString()}
                       </p>
@@ -336,6 +422,7 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
                 ) : (
                   <p className="text-gray-400 text-center">No comments yet 💬</p>
                 )}
+
               </div>
 
               {/* Add Comment */}
@@ -485,9 +572,17 @@ const currentUserId = currentUser ? JSON.parse(currentUser)._id : null;
                   <div className="p-5 border-b border-gray-700">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-cyan-400 flex items-center justify-center font-bold text-black text-lg">
-                          {post.postedBy?.name?.charAt(0) || "A"}
-                        </div>
+                        {post.postedBy?.profileImage ? (
+                          <img
+                            src={post.postedBy.profileImage}
+                            alt="profile"
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-cyan-400 flex items-center justify-center font-bold text-black text-lg">
+                            {post.postedBy?.name?.charAt(0) || "A"}
+                          </div>
+                        )}
                         <div>
                           <p className="font-semibold text-white">
                             {post.postedBy?.name || "Anonymous"}

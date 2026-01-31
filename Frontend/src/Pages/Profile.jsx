@@ -24,33 +24,51 @@ export default function Profile() {
     }
   };
 
+  /* ================= FETCH CODING DATA ================= */
+  /* ================= FETCH COMPLETED ================= */
+  const fetchCodingData = async () => {
+    console.log("🔄 Starting Coding Data Fetch...");
+
+    // LeetCode
+    try {
+      console.log("➡️ Fetching LeetCode...");
+      const lcRes = await fetch("http://localhost:5001/api/users/leetcode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const lcData = await lcRes.json();
+      console.log("✅ LeetCode Response:", lcData);
+      if (lcData.success) setLeetcode(lcData.data);
+      else console.warn("⚠️ LeetCode failed:", lcData.message);
+    } catch (err) {
+      console.error("❌ LeetCode Fetch Error:", err);
+    }
+
+    // Codeforces
+    try {
+      console.log("➡️ Fetching Codeforces...");
+      const cfRes = await fetch("http://localhost:5001/api/codeforces/getCodeforcesData", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const cfData = await cfRes.json();
+      console.log("✅ Codeforces Response:", cfData);
+      if (cfData.success) setCodeforces(cfData.data);
+      else console.warn("⚠️ Codeforces failed:", cfData.message);
+    } catch (err) {
+      console.error("❌ Codeforces Fetch Error:", err);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
-  }, []);
-
-  /* ================= FETCH CODING DATA ================= */
-  useEffect(() => {
-    fetch("http://localhost:5001/api/users/leetcode", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(res => setLeetcode(res.data))
-      .catch(err => console.error("LeetCode fetch error", err));
-
-    fetch("http://localhost:5001/api/codeforces/getCodeforcesData", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(res => setCodeforces(res.data))
-      .catch(err => console.error("Codeforces fetch error", err));
+    fetchCodingData();
   }, []);
 
   if (!profile) {
@@ -66,6 +84,12 @@ export default function Profile() {
   // Header content with Edit button
   const headerContent = (
     <div className="flex items-center gap-3 flex-1 justify-end">
+      <button
+        onClick={fetchCodingData}
+        className="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 hover:border-slate-600"
+      >
+        Refresh Stats
+      </button>
       <button
         onClick={() => setEditMode(true)}
         className="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-700 hover:to-purple-700 border border-transparent hover:border-violet-400 shadow-lg shadow-violet-500/20"

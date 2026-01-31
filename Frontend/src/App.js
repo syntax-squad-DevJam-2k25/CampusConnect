@@ -15,6 +15,7 @@ import OtherProfile from "./Pages/OtherProfile.jsx";
 import { loginSuccess } from "./redux/userSlice";
 import Profile from "./Pages/Profile.jsx";
 import Community from "./Pages/Community.jsx";
+import ProfileMatching from "./Pages/ProfileMatching.jsx";
 
 function App() {
   const user = useSelector((state) => state.user.currentUser);
@@ -75,7 +76,8 @@ function App() {
             )
           }
         />
-       <Route path = "/community" element={user ? <Community /> : <Navigate to="/" />}  ></Route>
+        <Route path="/community" element={user ? <Community /> : <Navigate to="/" />}  ></Route>
+        <Route path="/matching" element={user ? <ProfileMatching /> : <Navigate to="/" />}  ></Route>
         {/* OTHER USER PROFILE */}
         <Route
           path="/u/:id"

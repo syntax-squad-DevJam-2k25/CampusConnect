@@ -53,19 +53,18 @@ router.put(
   userController.updateLeetcode
 );
 
+const leetcodeController = require("./../controllers/platformController/leetcodeController");
+
+// ... existing code ...
+
 router.post(
   "/leetcode",
   authMiddleware,
-
-  userController.getLeetcodeProfile
+  leetcodeController.getLeetcodeData
 );
 
-router.post(
-  "/leetcode2",
-  authMiddleware,
-
-  userController.getLeetcodeProfile2
-);
+// Deprecated or removed routes
+// router.post("/leetcode2", ...);
 
 router.get(
   "/count",

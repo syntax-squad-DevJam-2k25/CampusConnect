@@ -10,8 +10,8 @@ import {
 
 const navItems = [
     {
-        title: "Profile Matching",
-        url: "/profile-matching",
+        title: "Find Matches",
+        url: "/matching",
         icon: UserPlus,
         activeClass: "bg-gradient-to-r from-pink-600 to-rose-600",
     },

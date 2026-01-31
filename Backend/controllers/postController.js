@@ -38,13 +38,16 @@ exports.createPost = async (req, res) => {
       let folder = "community/files";
       let mediaType = "file";
 
-      if (req.file.mimetype.startsWith("image")) {
-        folder = "community/images";
-        mediaType = "image";
-      } else if (req.file.mimetype.startsWith("video")) {
-        folder = "community/videos";
-        mediaType = "video";
-      }
+    if (req.file.mimetype.startsWith("image")) {
+  folder = "community/images";
+  mediaType = "image";
+} else if (req.file.mimetype.startsWith("video")) {
+  folder = "community/videos";
+  mediaType = "video";
+} else {
+  folder = "community/docs";  // ⭐ use docs, not files
+  mediaType = "file";
+}
 
       const result = await uploadToCloudinary(req.file, folder);
       console.log("☁️ Cloudinary result:", result);
@@ -153,7 +156,7 @@ exports.deletePost = async (req, res) => {
 }
 
 
-    await post.deleteOne();
+   await Post.findByIdAndDelete(postId);
 
     return res.status(200).json({
       success: true,

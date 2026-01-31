@@ -101,6 +101,11 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 fd.append("profileImage", fileInputRef.current.files[0]);
             }
 
+            const resumeInput = document.getElementById('resume-input');
+            if (resumeInput && resumeInput.files[0]) {
+                fd.append("resume", resumeInput.files[0]);
+            }
+
             const res = await fetch("http://localhost:5001/api/users/update-profile", {
                 method: "PUT",
                 headers: { Authorization: `Bearer ${token}` },
@@ -235,6 +240,19 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                             <Input
                                 id="profile-image-input"
                                 ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-600 file:text-white hover:file:bg-violet-700 file:cursor-pointer file:transition-all bg-slate-900/80 border-slate-600 text-slate-400"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="resume-input" className="text-slate-300 text-sm font-medium flex items-center gap-2">
+                                <Upload className="w-4 h-4" />
+                                Resume
+                            </Label>
+                            <Input
+                                id="resume-input"
                                 type="file"
                                 accept="image/*"
                                 className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-600 file:text-white hover:file:bg-violet-700 file:cursor-pointer file:transition-all bg-slate-900/80 border-slate-600 text-slate-400"

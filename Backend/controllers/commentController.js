@@ -1,40 +1,66 @@
-// controllers/commentController.js
 import Comment from "../models/Comment.js";
 import { getIO } from "../config/socket.js";
 
 export const createComment = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, parentId } = req.body;
     const { postId } = req.params;
 
     if (!text) {
       return res.status(400).json({ message: "Comment text required" });
     }
 
-    const comment = await Comment.create({
-      postId,
-      userId: req.user._id,
-      text,
-    });
+    if (parentId) {
+      // Reply to a comment
+      const parentComment = await Comment.findById(parentId);
+      if (!parentComment) {
+        return res.status(404).json({ message: "Parent comment not found" });
+      }
 
-    await comment.populate("userId", "name profileImage");
+      const reply = {
+        userId: req.user._id,
+        text,
+      };
 
-    const formattedComment = {
-      _id: comment._id,
-      text: comment.text,
-      username: comment.userId.name,
-      userId: comment.userId._id,
-      createdAt: comment.createdAt,
-      replies: [],
-      reactions: [],
-    };
+      parentComment.replies.push(reply);
+      await parentComment.save();
 
-    // ✅ SOCKET EMIT (no response here)
-    const io = getIO();
-    io.to(postId.toString()).emit("comment_added", formattedComment);
+      await parentComment.populate("replies.userId", "name profileImage");
 
-    // ✅ SINGLE RESPONSE
-    return res.status(201).json(formattedComment);
+      const formattedReply = parentComment.replies[parentComment.replies.length - 1];
+
+      // SOCKET EMIT
+      const io = getIO();
+      io.to(postId.toString()).emit("reply_added", { parentId, reply: formattedReply });
+
+      return res.status(201).json(formattedReply);
+    } else {
+      // New comment
+      const comment = await Comment.create({
+        postId,
+        userId: req.user._id,
+        text,
+      });
+
+      await comment.populate("userId", "name profileImage");
+
+      const formattedComment = {
+        _id: comment._id,
+        text: comment.text,
+        username: comment.userId.name,
+        userId: comment.userId._id,
+        profileImage: comment.userId.profileImage,
+        createdAt: comment.createdAt,
+        replies: [],
+        reactions: [],
+      };
+
+      // SOCKET EMIT
+      const io = getIO();
+      io.to(postId.toString()).emit("comment_added", formattedComment);
+
+      return res.status(201).json(formattedComment);
+    }
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: err.message });
@@ -47,6 +73,7 @@ export const getCommentsByPost = async (req, res) => {
 
     const comments = await Comment.find({ postId })
       .populate("userId", "name profileImage")
+      .populate("replies.userId", "name profileImage")
       .sort({ createdAt: -1 });
 
     const formatted = comments.map((c) => ({
@@ -54,12 +81,14 @@ export const getCommentsByPost = async (req, res) => {
       text: c.text,
       username: c.userId.name,
       userId: c.userId._id,
+      profileImage: c.userId.profileImage,
       createdAt: c.createdAt,
       replies: c.replies.map((r) => ({
         _id: r._id,
         text: r.text,
-        userId: r.userId,
-        username: r.username || "User",
+        userId: r.userId._id,
+        username: r.userId.name,
+        profileImage: r.userId.profileImage,
         createdAt: r.createdAt,
       })),
       reactions: c.reactions,
@@ -73,10 +102,11 @@ export const getCommentsByPost = async (req, res) => {
 
 /* ================= UPDATE COMMENT ================= */
 export const updateComment = async (req, res) => {
+  console.log("Update comment function reached");
   try {
     const { commentId } = req.params;
     const { text } = req.body;
-
+  console.log("Update comment called");
     const comment = await Comment.findById(commentId);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
@@ -97,15 +127,17 @@ export const updateComment = async (req, res) => {
       replies: comment.replies,
       reactions: comment.reactions,
     };
-
-    res.json(formattedComment);
-
+   
+ const io = getIO();
     io.to(comment.postId.toString()).emit(
       "comment_updated",
       formattedComment
     );
+
+    return res.json(formattedComment);
+  
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Edit error:", err);
   }
 };
 
@@ -122,10 +154,19 @@ export const deleteComment = async (req, res) => {
     }
 
     await comment.deleteOne();
-
-    res.json({ message: "Comment deleted", commentId });
-
+     console.log(`Comment ${comment.postId} deleted successfully`);
+    
+const io = getIO();
+ console.log("io exists:", !!io);
     io.to(comment.postId.toString()).emit("comment_deleted", commentId);
+
+
+return res.status(200).json({
+  success: true,
+  message: "Comment deleted",
+  commentId
+});
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -188,12 +229,13 @@ export const editReply = async (req, res) => {
     reply.text = text;
     await comment.save();
 
-    res.json({ commentId, reply });
-
+    const io = getIO(); 
     io.to(comment.postId.toString()).emit("reply_updated", {
       commentId,
       reply,
     });
+    res.json({ commentId, reply });
+
   } catch (err) {
     res.status(500).json({ message: "Edit reply failed" });
   }
@@ -216,13 +258,14 @@ export const deleteReply = async (req, res) => {
 
     reply.deleteOne();
     await comment.save();
-
-    res.json({ commentId, replyId });
-
-    io.to(comment.postId.toString()).emit("reply_deleted", {
+    const io = getIO(); 
+ io.to(comment.postId.toString()).emit("reply_deleted", {
       commentId,
       replyId,
     });
+    res.json({ commentId, replyId });
+
+   
   } catch (err) {
     res.status(500).json({ message: "Delete reply failed" });
   }

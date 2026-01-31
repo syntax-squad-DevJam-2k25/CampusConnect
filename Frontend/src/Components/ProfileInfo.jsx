@@ -78,6 +78,31 @@ export function ProfileInfo({ profile, leetcode, codeforces }) {
                             <SocialLink href={profile.linkedin} icon={SiLinkedin} label="LinkedIn" color="text-[#0077b5]" />
                         )}
                     </div>
+
+                    {/* Resume */}
+                    {profile.resumeUrl && (
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Resume</h4>
+                            </div>
+                            <div className="space-y-2">
+                                <a
+                                    href={profile.resumeUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center justify-between p-3 bg-slate-800/40 rounded-xl group hover:bg-slate-800 transition-all border border-transparent hover:border-slate-700"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                        <span className="text-slate-200 font-medium text-sm">View Resume</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <ExternalLink className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* AWARDS SECTION (Moved to left col if small, or keep here) */}

@@ -1,12 +1,16 @@
 const { getIO } = require("../config/socket");
 const Post = require("../models/Post");
+const { checkPostSafety } = require("../util/aiModeration");
 const uploadToCloudinary = require("../utils/cloudinaryUpload");
 
+
 exports.createPost = async (req, res) => {
+  console.log("\n================= CREATE POST API CALLED =================");
   try {
     const { content, isAnonymous } = req.body;
 
-    // ❌ Block empty post
+
+    // ❌ Block empty post FIRST
     if (!content && !req.file) {
       return res.status(400).json({
         success: false,
@@ -14,42 +18,57 @@ exports.createPost = async (req, res) => {
       });
     }
 
+    // 🔥 AI CHECK ONLY IF CONTENT EXISTS
+    if (content) {
+      const verdict = await checkPostSafety(content);
+     if (verdict !== "SAFE") {
+  return res.status(400).json({
+    success: false,
+    code: "AI_BLOCK",
+    message: "This post contains offensive content. We cannot post it."
+  });
+}
+
+    }
+
     let media = null;
 
-    // ✅ Handle file upload (image / video / pdf / excel / word)
+    // ✅ Handle file upload
     if (req.file) {
       let folder = "community/files";
       let mediaType = "file";
 
-      if (req.file.mimetype.startsWith("image")) {
-        folder = "community/images";
-        mediaType = "image";
-      } else if (req.file.mimetype.startsWith("video")) {
-        folder = "community/videos";
-        mediaType = "video";
-      }
+    if (req.file.mimetype.startsWith("image")) {
+  folder = "community/images";
+  mediaType = "image";
+} else if (req.file.mimetype.startsWith("video")) {
+  folder = "community/videos";
+  mediaType = "video";
+} else {
+  folder = "community/docs";  // ⭐ use docs, not files
+  mediaType = "file";
+}
 
       const result = await uploadToCloudinary(req.file, folder);
+      console.log("☁️ Cloudinary result:", result);
 
       media = {
-        type: mediaType,          // 🔥 FIXED
+        type: mediaType,
         url: result.url,
         publicId: result.publicId
       };
     }
 
+  
     const post = await Post.create({
       content: content?.trim() || "",
       media,
       postedBy: req.user._id,
       isAnonymous: isAnonymous === "true" || isAnonymous === true
     });
-
-     getIO().emit("postCreated", post);
-
+    getIO().emit("postCreated", post);
     res.status(201).json({ success: true, post });
   } catch (error) {
-    console.error(error.message);
     res.status(500).json({
       success: false,
       message: error.message || "Failed to create post"
@@ -137,7 +156,7 @@ exports.deletePost = async (req, res) => {
 }
 
 
-    await post.deleteOne();
+   await Post.findByIdAndDelete(postId);
 
     return res.status(200).json({
       success: true,

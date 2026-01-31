@@ -32,6 +32,9 @@ const [showReplies, setShowReplies] = useState({});
 const [filter, setFilter] = useState(null);
 const [showModal, setShowModal] = useState(false);
 const [selectedImage, setSelectedImage] = useState(null);
+const [editingReply, setEditingReply] = useState(null);
+const [editReplyText, setEditReplyText] = useState("");
+
 
   const filteredPosts = filter ? posts.filter(post => post.content && post.content.toLowerCase().includes(filter.toLowerCase())) : posts;
 
@@ -75,59 +78,74 @@ const [selectedImage, setSelectedImage] = useState(null);
   };
 
   // ================= CREATE POST =================
-  const handlePost = async () => {
-    if (!content && !file) {
-      toast.warning("Please write something or upload a file");
-      return;
-    }
+const handlePost = async () => {
+  console.log("\n========= HANDLE POST CALLED =========");
+  console.log("📝 Content:", content);
+  console.log("📎 File object:", file);
 
-    if (!window.confirm("Once posted, you cannot edit this post. Are you sure you want to post?")) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("content", content);
-    formData.append("isAnonymous", isAnonymous);
-
-    if (file) {
-      formData.append("file", file);
-    }
-
-    try {
-      setLoading(true);
-
-      await axios.post(
-        "http://localhost:5001/api/community/create",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
-          }
-        }
-      );
-
-      // Reset fields
-      setContent("");
-      setFile(null);
-      setIsAnonymous(false);
-
-      // Refresh feed
-      fetchPosts();
-    } catch (err) {
-  console.error(err);
-
-  if (err.response?.data?.code === "AI_BLOCK") {
-    toast.error(err.response.data.message);
-  } else {
-    toast.error("Failed to create post");
+  if (!content && !file) {
+    toast.warning("Please write something or upload a file");
+    return;
   }
 
-} finally {
-  setLoading(false);
-}
+  if (!window.confirm("Once posted, you cannot edit this post. Are you sure you want to post?")) {
+    return;
+  }
 
-  };
+  const formData = new FormData();
+  formData.append("content", content);
+  formData.append("isAnonymous", isAnonymous);
+
+  if (file) {
+    console.log("📂 Appending file:", file.name, file.type, file.size);
+    formData.append("file", file);
+  }
+
+  // 🔥 VERY IMPORTANT DEBUG — see what is inside FormData
+  for (let pair of formData.entries()) {
+    console.log("📦 FormData:", pair[0], pair[1]);
+  }
+
+  try {
+    setLoading(true);
+    console.log("🚀 Sending request to backend...");
+
+    const response = await axios.post(
+      "http://localhost:5001/api/community/create",
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data"
+        }
+      }
+    );
+
+    console.log("✅ Backend response:", response.data);
+
+    // Reset fields
+    setContent("");
+    setFile(null);
+    setIsAnonymous(false);
+
+    console.log("🔄 Refreshing posts...");
+    fetchPosts();
+
+  } catch (err) {
+    console.log("❌ ERROR FROM BACKEND:", err.response?.data || err.message);
+
+    if (err.response?.data?.code === "AI_BLOCK") {
+      toast.error(err.response.data.message);
+    } else {
+      toast.error("Failed to create post");
+    }
+
+  } finally {
+    setLoading(false);
+    console.log("========= HANDLE POST END =========\n");
+  }
+};
+
   const [totalUsers, setTotalUsers] = useState(0);
 
   const getTotalUsers = async () => {
@@ -182,6 +200,39 @@ const [selectedImage, setSelectedImage] = useState(null);
       console.error("Failed to fetch comments", err);
     }
   };
+const handleEditReply = async (commentId, replyId) => {
+  if (!editReplyText.trim()) return;
+
+  try {
+    await axios.put(
+      `http://localhost:5001/api/comments/${commentId}/reply/${replyId}`,
+      { text: editReplyText },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast.success("Reply updated");
+    setEditingReply(null);
+    fetchComments(activeCommentPostId);
+  } catch (err) {
+    toast.error("Edit reply failed");
+  }
+};
+
+const handleDeleteReply = async (commentId, replyId) => {
+  if (!window.confirm("Delete this reply?")) return;
+
+  try {
+    await axios.delete(
+      `http://localhost:5001/api/comments/${commentId}/reply/${replyId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast.success("Reply deleted");
+    fetchComments(activeCommentPostId);
+  } catch (err) {
+    toast.error("Delete reply failed");
+  }
+};
 
   const handleAddComment = async (postId, parentId = null) => {
     const text = parentId ? replyText : commentText;
@@ -325,7 +376,16 @@ const handleEditComment = async (commentId) => {
       )
     );
   });
+const getFileLabel = (url) => {
+  const lower = url.toLowerCase();
 
+  if (lower.includes(".pdf")) return "📄 View PDF";
+  if (lower.includes(".doc") || lower.includes(".docx")) return "📝 View Document";
+  if (lower.includes(".xls") || lower.includes(".xlsx")) return "📊 View Excel";
+  if (lower.includes(".ppt")) return "📽 View Presentation";
+
+  return "📁 Download File";
+};
 
   // ================= FETCH POSTS =================
   const fetchPosts = async () => {
@@ -522,31 +582,64 @@ const handleEditComment = async (commentId) => {
                           ) : (
                             <>
                               <div className="mt-3 ml-6 space-y-2">
-                                {comment.replies.map((reply) => (
-                                  <div
-                                    key={reply._id}
-                                    className="bg-gray-700 p-2 rounded-lg"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      {reply.userId?.profileImage ? (
-                                        <img
-                                          src={`http://localhost:5001/${reply.userId.profileImage}`}
-                                          alt="profile"
-                                          className="w-6 h-6 rounded-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-cyan-400 flex items-center justify-center font-bold text-black text-xs">
-                                          {reply.userId?.username?.charAt(0) || "U"}
-                                        </div>
-                                      )}
-                                      <p className="font-semibold text-sm">{reply.userId?.username}</p>
-                                    </div>
-                                    <p className="text-sm mt-1">{renderContent(reply.text)}</p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {new Date(reply.createdAt).toLocaleString()}
-                                    </p>
-                                  </div>
-                                ))}
+                             {comment.replies.map((reply) => (
+  <div key={reply._id} className="bg-gray-700 p-2 rounded-lg">
+    <div className="flex justify-between items-center">
+      <div className="flex items-center gap-2">
+        <p className="font-semibold text-sm">
+          {reply.userId?.username}
+        </p>
+      </div>
+
+      {reply.userId === currentUserId && (
+        <div className="flex gap-2 text-xs">
+          <button
+            onClick={() => {
+              setEditingReply(reply._id);
+              setEditReplyText(reply.text);
+            }}
+            className="text-blue-400"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() =>
+              handleDeleteReply(comment._id, reply._id)
+            }
+            className="text-red-400"
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+
+    {editingReply === reply._id ? (
+      <>
+        <textarea
+          value={editReplyText}
+          onChange={(e) => setEditReplyText(e.target.value)}
+          className="w-full bg-gray-600 text-white p-1 rounded mt-1"
+        />
+        <button
+          onClick={() =>
+            handleEditReply(comment._id, reply._id)
+          }
+          className="bg-green-500 px-2 py-1 text-xs rounded mt-1"
+        >
+          Save
+        </button>
+      </>
+    ) : (
+      <p className="text-sm mt-1">{renderContent(reply.text)}</p>
+    )}
+
+    <p className="text-xs text-gray-400 mt-1">
+      {new Date(reply.createdAt).toLocaleString()}
+    </p>
+  </div>
+))}
+
                               </div>
                               <button
                                 onClick={() => setShowReplies(prev => ({...prev, [comment._id]: false}))}
@@ -569,6 +662,7 @@ const handleEditComment = async (commentId) => {
                 )}
 
               </div>
+
 
               {/* Add Comment */}
               <div className="p-4 border-t border-gray-700 bg-gray-900">
@@ -773,26 +867,49 @@ const handleEditComment = async (commentId) => {
                     )}
 
                     {/* Media */}
-                    {post.media?.url && (
-                      <div className="mt-4 rounded-xl overflow-hidden bg-gray-900">
-                        {post.media.type === "image" && (
-                          <img
-                            src={post.media.url}
-                            alt="post"
-                            className="w-full h-auto max-h-96 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
-                            onClick={() => { setSelectedImage(post.media.url); setShowModal(true); }}
-                          />
-                        )}
+               {post.media?.url && (
+  <div className="mt-4 rounded-xl overflow-hidden bg-gray-900 p-3">
 
-                        {post.media.type === "video" && (
-                          <video
-                            src={post.media.url}
-                            controls
-                            className="w-full max-h-96 rounded-xl"
-                          />
-                        )}
-                      </div>
-                    )}
+    {/* IMAGE */}
+    {post.media.type === "image" && (
+      <img
+        src={post.media.url}
+        alt="post"
+        className="w-full h-auto max-h-96 object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+        onClick={() => {
+          setSelectedImage(post.media.url);
+          setShowModal(true);
+        }}
+      />
+    )}
+
+    {/* VIDEO */}
+    {post.media.type === "video" && (
+      <video
+        src={post.media.url}
+        controls
+        className="w-full max-h-96 rounded-xl"
+      />
+    )}
+
+    {/* FILE */}
+    {post.media.type === "file" && (
+      <a
+        href={post.media.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg hover:bg-gray-700 transition text-white"
+      >
+        <span className="text-xl">📎</span>
+        <span className="font-medium">
+          {getFileLabel(post.media.url)}
+        </span>
+      </a>
+    )}
+
+  </div>
+)}
+
                   </div>
 
                   {/* Post Footer - Interactions */}

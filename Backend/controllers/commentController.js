@@ -229,12 +229,13 @@ export const editReply = async (req, res) => {
     reply.text = text;
     await comment.save();
 
-    res.json({ commentId, reply });
-
+    const io = getIO(); 
     io.to(comment.postId.toString()).emit("reply_updated", {
       commentId,
       reply,
     });
+    res.json({ commentId, reply });
+
   } catch (err) {
     res.status(500).json({ message: "Edit reply failed" });
   }
@@ -257,13 +258,14 @@ export const deleteReply = async (req, res) => {
 
     reply.deleteOne();
     await comment.save();
-
-    res.json({ commentId, replyId });
-
-    io.to(comment.postId.toString()).emit("reply_deleted", {
+    const io = getIO(); 
+ io.to(comment.postId.toString()).emit("reply_deleted", {
       commentId,
       replyId,
     });
+    res.json({ commentId, replyId });
+
+   
   } catch (err) {
     res.status(500).json({ message: "Delete reply failed" });
   }

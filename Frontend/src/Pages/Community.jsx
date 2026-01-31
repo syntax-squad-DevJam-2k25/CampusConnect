@@ -115,11 +115,18 @@ const [selectedImage, setSelectedImage] = useState(null);
       // Refresh feed
       fetchPosts();
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to create post");
-    } finally {
-      setLoading(false);
-    }
+  console.error(err);
+
+  if (err.response?.data?.code === "AI_BLOCK") {
+    toast.error(err.response.data.message);
+  } else {
+    toast.error("Failed to create post");
+  }
+
+} finally {
+  setLoading(false);
+}
+
   };
   const [totalUsers, setTotalUsers] = useState(0);
 
@@ -471,6 +478,12 @@ const handleEditComment = async (commentId) => {
                           <textarea
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleAddComment(activeCommentPostId, comment._id);
+                              }
+                            }}
                             className="w-full bg-gray-700 text-white p-2 rounded placeholder-gray-400"
                             placeholder="Write a reply..."
                             rows={2}
@@ -562,6 +575,12 @@ const handleEditComment = async (commentId) => {
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddComment(activeCommentPostId);
+                    }
+                  }}
                   className="w-full bg-gray-800 text-white p-2 rounded placeholder-gray-400"
                   placeholder="Write a comment..."
                   rows={3}

@@ -27,13 +27,13 @@ import "react-toastify/dist/ReactToastify.css";
   const [editText, setEditText] = useState("");
   const [editLoading, setEditLoading] = useState(false);
  const [replyingTo, setReplyingTo] = useState(null);
-const [replyText, setReplyText] = useState("");
-const [showReplies, setShowReplies] = useState({});
-const [filter, setFilter] = useState(null);
-const [showModal, setShowModal] = useState(false);
-const [selectedImage, setSelectedImage] = useState(null);
-const [editingReply, setEditingReply] = useState(null);
-const [editReplyText, setEditReplyText] = useState("");
+ const [replyText, setReplyText] = useState("");
+ const [showReplies, setShowReplies] = useState({});
+ const [filter, setFilter] = useState(null);
+ const [showModal, setShowModal] = useState(false);
+ const [selectedImage, setSelectedImage] = useState(null);
+ const [editingReply, setEditingReply] = useState(null);
+ const [editReplyText, setEditReplyText] = useState("");
 
 
   const filteredPosts = filter ? posts.filter(post => post.content && post.content.toLowerCase().includes(filter.toLowerCase())) : posts;
@@ -101,14 +101,9 @@ const handlePost = async () => {
     formData.append("file", file);
   }
 
-  // 🔥 VERY IMPORTANT DEBUG — see what is inside FormData
-  for (let pair of formData.entries()) {
-    console.log("📦 FormData:", pair[0], pair[1]);
-  }
-
   try {
     setLoading(true);
-    console.log("🚀 Sending request to backend...");
+  
 
     const response = await axios.post(
       "http://localhost:5001/api/community/create",
@@ -892,24 +887,52 @@ const getFileLabel = (url) => {
       />
     )}
 
+   
+ 
     {/* FILE */}
     {post.media.type === "file" && (
-      <a
-        href={post.media.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg hover:bg-gray-700 transition text-white"
-      >
-        <span className="text-xl">📎</span>
-        <span className="font-medium">
-          {getFileLabel(post.media.url)}
-        </span>
-      </a>
+      <div className="space-y-3">
+        {/* PDF Preview using Google Docs Viewer */}
+        {post.media.url.toLowerCase().includes(".pdf") && (
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(post.media.url)}&embedded=true`}
+            className="w-full h-96 rounded-lg border border-gray-600"
+            title="PDF Preview"
+          />
+        )}
+        
+        {/* For non-PDF files, show a link */}
+        {!post.media.url.toLowerCase().includes(".pdf") && (
+          <a
+            href={post.media.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition text-white"
+          >
+            <span className="text-2xl">{getFileLabel(post.media.url).icon}</span>
+            <div className="flex flex-col">
+              <span className="font-medium">{getFileLabel(post.media.url).label}</span>
+              <span className="text-xs text-gray-400">Click to open</span>
+            </div>
+          </a>
+        )}
+        
+        {/* Open in new tab button */}
+        <div className="flex gap-2">
+          <a
+            href={`https://docs.google.com/viewer?url=${encodeURIComponent(post.media.url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-white text-sm transition"
+          >
+            <span>👁️</span> View Full Screen
+          </a>
+        </div>
+      </div>
     )}
 
   </div>
 )}
-
                   </div>
 
                   {/* Post Footer - Interactions */}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./Sidebar.css";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
   const [users, setUsers] = useState([]);
@@ -57,23 +58,46 @@ const LeetcodeLeaderboard = ({ selectedCourse, selectedYear }) => {
     try {
       const token = localStorage.getItem("token");
 
-      await Promise.all(
-        users.map((user) =>
-          fetch("http://localhost:5001/api/users/leetcode", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ id: user._id }),
-          })
-        )
+      // Fetch current ratings for all users - with error handling
+      const refreshPromises = users.map((user) =>
+        fetch("http://localhost:5001/api/users/leetcode", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id: user._id }),
+        }).catch(err => console.error(`Failed to refresh user ${user._id}:`, err))
       );
 
-      await fetchAllUsers();
-      setCurrentPage(1);
+      await Promise.all(refreshPromises);
+
+      // Wait for DB updates
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Refetch all users with cache busting
+      const cacheToken = new Date().getTime();
+      const response = await fetch(
+        `http://localhost:5001/api/users/get-all-users?t=${cacheToken}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Cache-Control": "no-cache",
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.data);
+        setCurrentPage(1);
+        toast.success("Ratings refreshed!");
+      }
     } catch (error) {
-      setError(error.message);
+      console.error("Error refreshing:", error);
+      toast.error("Failed to refresh ratings");
     } finally {
       setRefreshing(false);
     }

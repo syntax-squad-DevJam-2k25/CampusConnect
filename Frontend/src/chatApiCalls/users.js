@@ -1,21 +1,39 @@
-import { axiosInstance } from "./index";
+import axios from "axios";
 
 export const getLoggedUser = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("No token found");
+  }
+
   try {
-    const response = await axiosInstance.get("api/users/get-logged-user");
-    console.log("Logged user response:", response);
+    const response = await axios.get(
+      "http://localhost:5001/api/users/get-logged-user",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    // ✅ Always return a plain object
-    return { user: response.data.data, errorMessage: null };
-  } catch (error) {
-    console.error("Error fetching logged user:", error);
+    console.log("🔹 getLoggedUser response:", response.data);
 
-    // ✅ Return a serializable error object
+    // Handle different response structures
+    // Sometimes the user data is directly in response.data
+    // Sometimes it's in response.data.data or response.data.user
+    const userData = response.data.data || response.data.user || response.data;
+
+    if (!userData) {
+      throw new Error("No user data in response");
+    }
+
     return {
-      user: null,
-      errorMessage:
-        error.response?.data?.message || error.message || "Something went wrong",
-      status: error.response?.status || 500,
+      user: userData,
+      success: true,
     };
+  } catch (error) {
+    console.error("❌ Error fetching logged user:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || "Failed to fetch user");
   }
 };

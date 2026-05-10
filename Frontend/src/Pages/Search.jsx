@@ -1,4 +1,4 @@
-import { useSelector } from 'react-redux';
+
 import './chat.css'
 
 function Search({searchKey, setSearchKey}){

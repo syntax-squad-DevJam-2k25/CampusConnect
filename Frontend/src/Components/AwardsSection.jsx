@@ -14,12 +14,12 @@ export function AwardsSection({ leetcode }) {
                     {badges.map((badge, idx) => (
                         <div key={idx} className="flex flex-col items-center p-3 bg-slate-800/40 rounded-lg hover:bg-slate-800 transition-colors group">
                             <div className="relative w-16 h-16 mb-2">
-                                {badge.icon.startsWith("http") ? (
-                                    <img src={badge.icon} alt={badge.displayName} className="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform" />
-                                ) : (
-                                    // Fallback or icon font if needed
-                                    <div className="w-full h-full bg-slate-700 rounded-full flex items-center justify-center text-xs">No Icon</div>
-                                )}
+                                <img
+                                    src={badge.icon.startsWith("http") ? badge.icon : `https://leetcode.com${badge.icon}`}
+                                    alt={badge.displayName}
+                                    className="w-full h-full object-contain drop-shadow-lg group-hover:scale-110 transition-transform"
+                                    onError={(e) => { e.target.style.display = 'none' }}
+                                />
                             </div>
                             <span className="text-xs font-medium text-slate-300 text-center leading-tight">
                                 {badge.displayName}

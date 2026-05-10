@@ -88,7 +88,7 @@ export default function Home() {
         <button
           onClick={() => setSelectedPlatform("leetcode")}
           className={`px-4 py-2 rounded-md font-semibold text-sm transition-all ${selectedPlatform === "leetcode"
-            ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-900 shadow-lg"
+            ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-white shadow-lg"
             : "text-slate-400 hover:text-white hover:bg-slate-700"
             }`}
         >

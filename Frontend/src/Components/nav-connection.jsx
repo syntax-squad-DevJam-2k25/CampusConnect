@@ -14,13 +14,7 @@ const navItems = [
         url: "/matching",
         icon: UserPlus,
         activeClass: "bg-gradient-to-r from-pink-600 to-rose-600",
-    },
-    {
-        title: "Code",
-        url: "/code",
-        icon: Code2,
-        activeClass: "bg-gradient-to-r from-indigo-600 to-violet-600",
-    },
+    }
 ];
 
 export function NavConnection() {

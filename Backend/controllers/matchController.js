@@ -85,8 +85,8 @@ exports.findMatches = async (req, res) => {
 
             // Step 5: Final Score
             const finalScore =
-                (0.45 * tagSimilarity) +
-                (0.25 * ratingScore) +
+                (0.35 * tagSimilarity) +
+                (0.35 * ratingScore) +
                 (0.15 * depthScore) +
                 (0.10 * domainMatch) +
                 (0.05 * gapTerm);

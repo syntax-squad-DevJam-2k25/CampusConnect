@@ -9,7 +9,34 @@ const mongoose = require("mongoose");
 
 
 exports.getAllChats = async (req, res) => {
-  res.json({ success: true, message: "getAllChats working" });
+  try {
+    const userId = req.user._id;
+
+    // Find all chats where user is a member
+    const chats = await Chat.find({ members: userId })
+      .populate("members", "name profileImage")
+      .sort({ updatedAt: -1 });
+
+    // Format chats with last message and other user info
+    const formattedChats = chats.map((chat) => {
+      const otherUser = chat.members.find(
+        (m) => m._id.toString() !== userId.toString()
+      );
+      const lastMsg = chat.messages[chat.messages.length - 1];
+
+      return {
+  _id: chat._id,
+  otherUser: otherUser,
+  lastMessage: lastMsg ? (lastMsg.text || lastMsg.emoji || null) : null,
+  lastMessageTime: lastMsg?.createdAt || chat.createdAt,
+  unreadCount: 0,
+};
+    });
+
+    res.json({ success: true, chats: formattedChats });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
 

@@ -10,7 +10,8 @@ function Chat() {
   const token = localStorage.getItem("token");
 
   const [search, setSearch] = useState("");
-  const [users, setUsers] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentChat, setCurrentChat] = useState(null);
@@ -24,16 +25,33 @@ function Chat() {
 
   const user = JSON.parse(localStorage.getItem("user"));
   const myUserId = user?._id;
-  const userMap = users.reduce((acc, u) => {
-    acc[u._id] = u.name;
-    return acc;
-  }, {});
 
   /* =========================
-     FETCH USERS
+     FETCH CHATS & USERS
      ========================= */
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchChats = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:5001/api/chat/get-all-chats",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        if (data.success) {
+          setChats(Array.isArray(data.chats) ? data.chats : []);
+          console.log("Fetched chats:", data.chats);
+        }
+      } catch (err) {
+        console.error("Fetch chats error:", err);
+      }
+    };
+
+    const fetchAllUsers = async () => {
       try {
         const res = await fetch(
           "http://localhost:5001/api/users/get-all-users",
@@ -45,14 +63,17 @@ function Chat() {
         );
 
         const data = await res.json();
-        setUsers(Array.isArray(data.data) ? data.data : []);
-        console.log("Fetched users:", data.data);
+        setAllUsers(Array.isArray(data.data) ? data.data : []);
+        console.log("Fetched all users:", data.data);
       } catch (err) {
         console.error("Fetch users error:", err);
       }
     };
 
-    fetchUsers();
+    if (token) {
+      fetchChats();
+      fetchAllUsers();
+    }
   }, [token]);
 
   /* =========================
@@ -60,8 +81,15 @@ function Chat() {
      ========================= */
   useEffect(() => {
     socket.on("receive-message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
+  setMessages((prev) => [...prev, msg]);
+  setChats((prev) =>
+    prev.map((c) =>
+      c._id === msg.chatId
+        ? { ...c, lastMessage: msg.text || msg.emoji || "" }
+        : c
+    )
+  );
+});
 
     socket.on("message-edited", ({ messageId, newText }) => {
       setMessages((prev) =>
@@ -88,44 +116,75 @@ function Chat() {
 
 
   /* =========================
-     FILTER USERS
+     FILTER CHATS OR USERS
      ========================= */
-  const filteredUsers = users.filter((u) =>
-    u.name?.toLowerCase().includes(search.toLowerCase())
+  // Combine chats and users - chats first (with messages), then other users
+  const chatUserIds = new Set(chats.map((c) => c.otherUser?._id));
+  const usersNotInChats = allUsers.filter(
+    (u) => u._id !== myUserId && !chatUserIds.has(u._id)
   );
 
+  const combinedList = [
+    ...chats,
+    ...usersNotInChats.map((u) => ({
+      _id: u._id,
+      otherUser: u,
+      lastMessage: null,
+    })),
+  ];
+
+  const filteredItems = combinedList.filter((item) => {
+    const displayUser = item.otherUser || item;
+    return displayUser?.name?.toLowerCase().includes(search.toLowerCase());
+  });
+
   /* =========================
-     SELECT USER → CREATE / GET CHAT
+     SELECT CHAT OR USER
      ========================= */
-  const handleSelectUser = async (user) => {
-    try {
-      setSelectedUser(user);
+const handleSelectChat = async (chat) => {
+  try {
+    const otherUserId = chat.otherUser?._id || chat._id;
+    setSelectedUser(chat.otherUser || chat);
 
-      const res = await fetch(
-        "http://localhost:5001/api/chat/create-new-chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ userId: user._id }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        setCurrentChat(data.chat);
-        setMessages(data.chat.messages || []);
-
-        // join socket room
-        socket.emit("join-chat", data.chat._id);
+    const res = await fetch(
+      "http://localhost:5001/api/chat/create-new-chat",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: otherUserId }),
       }
-    } catch (err) {
-      console.error("Create chat error:", err);
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setCurrentChat(data.chat);
+      setMessages(data.chat.messages || []);
+
+      // ✅ Add or update chat in sidebar
+      setChats((prev) => {
+        const exists = prev.find((c) => c._id === data.chat._id);
+        if (exists) return prev;
+        return [
+          {
+            _id: data.chat._id,
+            otherUser: chat.otherUser || chat,
+            lastMessage: null,
+          },
+          ...prev,
+        ];
+      });
+
+      socket.emit("join-chat", data.chat._id);
     }
-  };
+  } catch (err) {
+    console.error("Create chat error:", err);
+  }
+};
+
   const handleEditMessage = async (msgId) => {
     if (!editedText.trim()) return;
 
@@ -183,7 +242,13 @@ function Chat() {
           text: message,
         }),
       });
-
+      setChats((prev) =>
+  prev.map((c) =>
+    c._id === currentChat._id
+      ? { ...c, lastMessage: message }
+      : c
+  )
+);
       setMessage("");
     } catch (err) {
       console.error("Send message error:", err);
@@ -196,47 +261,66 @@ function Chat() {
         {/* SIDEBAR */}
         <div className="w-80 border-r border-slate-800 bg-slate-900 overflow-y-auto">
           <div className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Contacts</h2>
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              Messages
+            </h2>
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search chats..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 text-slate-300 placeholder-slate-500 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          {filteredUsers.map((u) => (
-            <div
-              key={u._id}
-              onClick={() => handleSelectUser(u)}
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-slate-800/50 hover:bg-slate-800
-                ${selectedUser?._id === u._id
-                  ? "bg-slate-800 border-l-2 border-l-blue-500 pl-[14px]"
-                  : "border-l-2 border-l-transparent"}`}
-            >
-              <div className="relative">
-                {u?.profileImage ? (
-                  <img
-                    src={u.profileImage}
-                    alt={u.name}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-300 ring-2 ring-slate-700">
-                    {u?.name?.charAt(0)}
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => {
+              const displayUser = item.otherUser || item;
+              const isSelected = selectedUser?._id === displayUser._id;
+              return (
+                <div
+                  key={item._id}
+                  onClick={() => handleSelectChat(item)}
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-slate-800/50 hover:bg-slate-800
+                    ${isSelected
+                      ? "bg-slate-800 border-l-2 border-l-blue-500 pl-[14px]"
+                      : "border-l-2 border-l-transparent"}`}
+                >
+                  <div className="relative">
+                    {displayUser?.profileImage ? (
+                      <img
+                        src={displayUser.profileImage}
+                        alt={displayUser.name}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-300 ring-2 ring-slate-700">
+                        {displayUser?.name?.charAt(0)}
+                      </div>
+                    )}
                   </div>
-                )}
-                {/* Online status indicator can go here */}
-              </div>
 
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium truncate ${selectedUser?._id === u._id ? "text-white" : "text-slate-300"}`}>
-                  {u.name}
-                </p>
-                {/* Last message preview could go here */}
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium truncate ${isSelected ? "text-white" : "text-slate-300"}`}>
+                      {displayUser?.name}
+                    </p>
+                    {item.lastMessage ? (
+                      <p className="text-xs text-slate-500 truncate">
+                        {item.lastMessage}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-600 truncate italic">
+                        New conversation
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-4 text-center text-slate-500 text-sm">
+              No matches found
             </div>
-          ))}
+          )}
         </div>
 
         {/* CHAT AREA */}
@@ -290,7 +374,7 @@ function Chat() {
                         >
                           {!isMine && (
                             <div className="text-[10px] font-bold opacity-50 mb-1 text-slate-400">
-                              {userMap[msg.sender]}
+                              {selectedUser?.name}
                             </div>
                           )}
 

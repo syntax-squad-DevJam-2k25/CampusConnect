@@ -47,6 +47,7 @@ export const createComment = async (req, res) => {
       const formattedComment = {
         _id: comment._id,
         text: comment.text,
+          postId: postId, 
         username: comment.userId.name,
         userId: comment.userId._id,
         profileImage: comment.userId.profileImage,
@@ -122,6 +123,7 @@ export const updateComment = async (req, res) => {
       _id: comment._id,
       text: comment.text,
       username: comment.userId.name,
+       postId: comment.postId,
       userId: comment.userId._id,
       createdAt: comment.createdAt,
       replies: comment.replies,

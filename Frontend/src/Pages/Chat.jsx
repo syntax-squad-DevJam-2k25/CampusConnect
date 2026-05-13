@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef} from "react";
 import { DashboardLayout } from "../Components/DashboardLayout";
 import socket from "../socket"; // socket.io-client file
 import { ToastContainer, toast } from "react-toastify";
@@ -22,6 +22,8 @@ function Chat() {
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editedText, setEditedText] = useState("");
   const [openMenuMsgId, setOpenMenuMsgId] = useState(null);
+  const currentChatRef = useRef(null);
+  const chatsRef = useRef([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const myUserId = user?._id;
@@ -80,32 +82,63 @@ function Chat() {
      SOCKET LISTENER
      ========================= */
   useEffect(() => {
-    socket.on("receive-message", (msg) => {
+socket.on("receive-message", (msg) => {
   setMessages((prev) => [...prev, msg]);
-  setChats((prev) =>
-    prev.map((c) =>
+
+  // ✅ move chat to top when new message received
+  setChats((prev) => {
+    const updated = prev.map((c) =>
       c._id === msg.chatId
         ? { ...c, lastMessage: msg.text || msg.emoji || "" }
+        : c
+    );
+    // move that chat to top
+    const chatIndex = updated.findIndex((c) => c._id === msg.chatId);
+    if (chatIndex > 0) {
+      const [chat] = updated.splice(chatIndex, 1);
+      updated.unshift(chat);
+    }
+    return updated;
+  });
+});
+
+    socket.on("message-edited", ({ messageId, newText, newLastMessage }) => {
+      console.log("🔍 ref id:", currentChatRef.current?._id);
+  console.log("📋 chat ids in sidebar:", chats.map(c => c._id));
+  console.log("📨 newLastMessage:", newLastMessage);
+  setMessages((prev) =>
+    prev.map((msg) =>
+      msg._id === messageId
+        ? { ...msg, text: newText, edited: true }
+        : msg
+    )
+  );
+
+  // ✅ update sidebar if last message changed
+  if (newLastMessage !== null && newLastMessage !== undefined) {
+    setChats((prev) =>
+      prev.map((c) =>
+        c._id === currentChatRef.current?._id
+          ? { ...c, lastMessage: newLastMessage }
+          : c
+      )
+    );
+  }
+});
+
+socket.on("message-deleted", ({ messageId, newLastMessage }) => {
+    console.log("🗑️ deleted, newLastMessage:", newLastMessage);
+  console.log("🔍 currentChatRef:", currentChatRef.current?._id);
+  setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+
+  setChats((prev) =>
+    prev.map((c) =>
+      c._id === currentChatRef.current?._id
+        ? { ...c, lastMessage: newLastMessage } // ✅ null shows "New conversation"
         : c
     )
   );
 });
-
-    socket.on("message-edited", ({ messageId, newText }) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === messageId
-            ? { ...msg, text: newText, edited: true }
-            : msg
-        )
-      );
-    });
-
-    socket.on("message-deleted", ({ messageId }) => {
-      setMessages((prev) =>
-        prev.filter((msg) => msg._id !== messageId)
-      );
-    });
 
     return () => {
       socket.off("receive-message");
@@ -114,6 +147,14 @@ function Chat() {
     };
   }, []);
 
+  // Keep ref in sync
+useEffect(() => {
+  currentChatRef.current = currentChat;
+}, [currentChat]);
+
+useEffect(() => {
+  chatsRef.current = chats;
+}, [chats]);
 
   /* =========================
      FILTER CHATS OR USERS
@@ -186,24 +227,35 @@ const handleSelectChat = async (chat) => {
 };
 
   const handleEditMessage = async (msgId) => {
-    if (!editedText.trim()) return;
+  if (!editedText.trim()) return;
+   console.log("📤 editing:", { chatId: currentChat._id, messageId: msgId, newText: editedText })
+  const newText = editedText; // save before clearing
 
-    await fetch("http://localhost:5001/api/chat/edit-message", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        chatId: currentChat._id,
-        messageId: msgId,
-        newText: editedText,
-      }),
-    });
+  // ✅ Update locally immediately (don't wait for socket)
+  setMessages((prev) =>
+    prev.map((msg) =>
+      msg._id === msgId
+        ? { ...msg, text: newText, edited: true }
+        : msg
+    )
+  );
 
-    setEditingMsgId(null);
-    setEditedText("");
-  };
+  setEditingMsgId(null);
+  setEditedText("");
+
+  await fetch("http://localhost:5001/api/chat/edit-message", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      chatId: currentChat._id,
+      messageId: msgId,
+      newText,
+    }),
+  });
+};
   const handleDeleteMessage = async (msgId) => {
     if (!window.confirm("Are you sure you want to delete this message?")) return;
 
@@ -227,33 +279,42 @@ const handleSelectChat = async (chat) => {
   /* =========================
      SEND MESSAGE
      ========================= */
-  const handleSendMessage = async () => {
-    if (!message.trim() || !currentChat) return;
+ const handleSendMessage = async () => {
+  if (!message.trim() || !currentChat) return;
 
-    try {
-      await fetch("http://localhost:5001/api/chat/send-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          chatId: currentChat._id,
-          text: message,
-        }),
-      });
-      setChats((prev) =>
-  prev.map((c) =>
-    c._id === currentChat._id
-      ? { ...c, lastMessage: message }
-      : c
-  )
-);
-      setMessage("");
-    } catch (err) {
-      console.error("Send message error:", err);
-    }
-  };
+  try {
+    await fetch("http://localhost:5001/api/chat/send-message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        chatId: currentChat._id,
+        text: message,
+      }),
+    });
+
+    // ✅ move to top + update lastMessage
+    setChats((prev) => {
+      const updated = prev.map((c) =>
+        c._id === currentChat._id
+          ? { ...c, lastMessage: message }
+          : c
+      );
+      const chatIndex = updated.findIndex((c) => c._id === currentChat._id);
+      if (chatIndex > 0) {
+        const [chat] = updated.splice(chatIndex, 1);
+        updated.unshift(chat);
+      }
+      return updated;
+    });
+
+    setMessage("");
+  } catch (err) {
+    console.error("Send message error:", err);
+  }
+};
 
   return (
     <DashboardLayout >

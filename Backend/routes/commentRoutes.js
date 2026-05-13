@@ -7,6 +7,7 @@ const {
   addReply,
   editReply,
   deleteReply,
+  reactToComment
 } = require("../controllers/commentController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -39,4 +40,5 @@ router.put("/:commentId/reply/:replyId", authMiddleware, editReply);
 // Delete reply
 router.delete("/:commentId/reply/:replyId", authMiddleware, deleteReply);
 
+router.post("/:commentId/react", authMiddleware, reactToComment);
 module.exports = router;

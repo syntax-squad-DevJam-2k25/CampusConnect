@@ -1,10 +1,11 @@
-const { getIO } = require("../config/socket");
-const Post = require("../models/Post");
-const { checkPostSafety } = require("../util/aiModeration");
-const uploadToCloudinary = require("../utils/cloudinaryUpload");
+import { getIO } from "../config/socket.js";
+import Post from "../models/Post.js";
+import Comment from "../models/Comment.js";
+import { checkPostSafety } from "../util/aiModeration.js";
+import uploadToCloudinary from "../utils/cloudinaryUpload.js";
 
 
-exports.createPost = async (req, res) => {
+export const createPost = async (req, res) => {
   console.log("\n================= CREATE POST API CALLED =================");
   try {
     const { content, isAnonymous } = req.body;
@@ -21,13 +22,13 @@ exports.createPost = async (req, res) => {
     // 🔥 AI CHECK ONLY IF CONTENT EXISTS
     if (content) {
       const verdict = await checkPostSafety(content);
-     if (verdict !== "SAFE") {
-  return res.status(400).json({
-    success: false,
-    code: "AI_BLOCK",
-    message: "This post contains offensive content. We cannot post it."
-  });
-}
+      if (verdict !== "SAFE") {
+        return res.status(400).json({
+          success: false,
+          code: "AI_BLOCK",
+          message: "This post contains offensive content. We cannot post it."
+        });
+      }
 
     }
 
@@ -38,16 +39,16 @@ exports.createPost = async (req, res) => {
       let folder = "community/files";
       let mediaType = "file";
 
-    if (req.file.mimetype.startsWith("image")) {
-  folder = "community/images";
-  mediaType = "image";
-} else if (req.file.mimetype.startsWith("video")) {
-  folder = "community/videos";
-  mediaType = "video";
-} else {
-  folder = "community/docs";  // ⭐ use docs, not files
-  mediaType = "file";
-}
+      if (req.file.mimetype.startsWith("image")) {
+        folder = "community/images";
+        mediaType = "image";
+      } else if (req.file.mimetype.startsWith("video")) {
+        folder = "community/videos";
+        mediaType = "video";
+      } else {
+        folder = "community/docs";  // ⭐ use docs, not files
+        mediaType = "file";
+      }
 
       const result = await uploadToCloudinary(req.file, folder);
       console.log("☁️ Cloudinary result:", result);
@@ -59,7 +60,7 @@ exports.createPost = async (req, res) => {
       };
     }
 
-  
+
     const post = await Post.create({
       content: content?.trim() || "",
       media,
@@ -77,32 +78,47 @@ exports.createPost = async (req, res) => {
 };
 
 
-exports.getAllPosts = async (req, res) => {
+export const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find()
-      .populate("postedBy", "name profileImage") // adjust fields as per User model
+      .populate("postedBy", "name profileImage")
       .sort({ createdAt: -1 });
 
-          let totalLikes = 0;
+    let totalLikes = 0;
+
+    // ✅ Fetch all comment counts in one query (efficient - no N+1 problem)
+    const postIds = posts.map((post) => post._id);
+    const commentCounts = await Comment.aggregate([
+      { $match: { postId: { $in: postIds } } },
+      { $group: { _id: "$postId", count: { $sum: 1 } } }
+    ]);
+
+    // ✅ Convert array to a map { postId: count } for O(1) lookup
+    const commentCountMap = {};
+    commentCounts.forEach(({ _id, count }) => {
+      commentCountMap[_id.toString()] = count;
+    });
 
     const formattedPosts = posts.map((post) => {
       const likesCount = post.likes.length;
       totalLikes += likesCount;
-      return {
-      _id: post._id,
-      content: post.content,
-      media: post.media,
-      isAnonymous: post.isAnonymous,
-      anonymousName: post.anonymousName,
-      likes: post.likes,
-      likesCount: post.likes.length,
-      repliesCount: post.repliesCount,
-      createdAt: post.createdAt,
 
-      // 🔒 Hide identity if anonymous
-      postedBy: post.isAnonymous
-        ? { name: "Anonymous", profileImage: null }
-        : post.postedBy
+      return {
+        _id: post._id,
+        content: post.content,
+        media: post.media,
+        isAnonymous: post.isAnonymous,
+        anonymousName: post.anonymousName,
+        likes: post.likes,
+        likesCount: post.likes.length,
+        repliesCount: post.repliesCount,
+        commentCount: commentCountMap[post._id.toString()] || 0, // ✅ added
+        createdAt: post.createdAt,
+
+        // 🔒 Hide identity if anonymous
+        postedBy: post.isAnonymous
+          ? { name: "Anonymous", profileImage: null }
+          : post.postedBy
       };
     });
 
@@ -121,8 +137,7 @@ exports.getAllPosts = async (req, res) => {
   }
 };
 
-
-exports.deletePost = async (req, res) => {
+export const deletePost = async (req, res) => {
   try {
     const { postId } = req.params;
 
@@ -136,8 +151,8 @@ exports.deletePost = async (req, res) => {
     const userId = req.user._id;
     const post = await Post.findById(postId);
 
-     console.log("USER:", req.user);
-     console.log("POST ID:", req.params.postId);
+    console.log("USER:", req.user);
+    console.log("POST ID:", req.params.postId);
 
 
     if (!post) {
@@ -148,15 +163,15 @@ exports.deletePost = async (req, res) => {
     }
 
     // 🔐 OWNER CHECK
-   if (post.postedBy.toString() !== userId.toString()) {
-  return res.status(403).json({
-    success: false,
-    message: "You are not allowed to delete this post"
-  });
-}
+    if (post.postedBy.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this post"
+      });
+    }
 
 
-   await Post.findByIdAndDelete(postId);
+    await Post.findByIdAndDelete(postId);
 
     return res.status(200).json({
       success: true,
@@ -172,7 +187,7 @@ exports.deletePost = async (req, res) => {
   }
 };
 
-exports.toggleLikePost = async (req, res) => {
+export const toggleLikePost = async (req, res) => {
   try {
     const { postId } = req.params;
     const userId = req.user._id;

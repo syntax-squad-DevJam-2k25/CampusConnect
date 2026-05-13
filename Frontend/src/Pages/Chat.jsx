@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef} from "react";
 import { DashboardLayout } from "../Components/DashboardLayout";
 import socket from "../socket"; // socket.io-client file
 import { ToastContainer, toast } from "react-toastify";
@@ -10,7 +10,8 @@ function Chat() {
   const token = localStorage.getItem("token");
 
   const [search, setSearch] = useState("");
-  const [users, setUsers] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentChat, setCurrentChat] = useState(null);
@@ -21,19 +22,38 @@ function Chat() {
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editedText, setEditedText] = useState("");
   const [openMenuMsgId, setOpenMenuMsgId] = useState(null);
+  const currentChatRef = useRef(null);
+  const chatsRef = useRef([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const myUserId = user?._id;
-  const userMap = users.reduce((acc, u) => {
-    acc[u._id] = u.name;
-    return acc;
-  }, {});
 
   /* =========================
-     FETCH USERS
+     FETCH CHATS & USERS
      ========================= */
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchChats = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:5001/api/chat/get-all-chats",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        if (data.success) {
+          setChats(Array.isArray(data.chats) ? data.chats : []);
+          console.log("Fetched chats:", data.chats);
+        }
+      } catch (err) {
+        console.error("Fetch chats error:", err);
+      }
+    };
+
+    const fetchAllUsers = async () => {
       try {
         const res = await fetch(
           "http://localhost:5001/api/users/get-all-users",
@@ -45,106 +65,245 @@ function Chat() {
         );
 
         const data = await res.json();
-        setUsers(Array.isArray(data.data) ? data.data : []);
-        console.log("Fetched users:", data.data);
+        setAllUsers(Array.isArray(data.data) ? data.data : []);
+        console.log("Fetched all users:", data.data);
       } catch (err) {
         console.error("Fetch users error:", err);
       }
     };
 
-    fetchUsers();
+    if (token) {
+      fetchChats();
+      fetchAllUsers();
+    }
   }, [token]);
 
   /* =========================
      SOCKET LISTENER
      ========================= */
   useEffect(() => {
-    socket.on("receive-message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
+socket.on("receive-message", (msg) => {
+  setMessages((prev) => [...prev, {
+    ...msg,
+    sender: msg.sender?.toString(), // ✅ convert to string
+    read: false,
+  }]);
 
-    socket.on("message-edited", ({ messageId, newText }) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === messageId
-            ? { ...msg, text: newText, edited: true }
-            : msg
-        )
-      );
-    });
+  setChats((prev) => {
+    const updated = prev.map((c) =>
+      c._id === msg.chatId
+        ? { ...c, lastMessage: msg.text || msg.emoji || "" }
+        : c
+    );
+    const chatIndex = updated.findIndex((c) => c._id === msg.chatId);
+    if (chatIndex > 0) {
+      const [chat] = updated.splice(chatIndex, 1);
+      updated.unshift(chat);
+    }
+    return updated;
+  });
+});
 
-    socket.on("message-deleted", ({ messageId }) => {
-      setMessages((prev) =>
-        prev.filter((msg) => msg._id !== messageId)
-      );
-    });
+    socket.on("message-edited", ({ messageId, newText, newLastMessage }) => {
+      console.log("🔍 ref id:", currentChatRef.current?._id);
+  console.log("📋 chat ids in sidebar:", chats.map(c => c._id));
+  console.log("📨 newLastMessage:", newLastMessage);
+  setMessages((prev) =>
+    prev.map((msg) =>
+      msg._id === messageId
+        ? { ...msg, text: newText, edited: true }
+        : msg
+    )
+  );
+
+  // ✅ update sidebar if last message changed
+  if (newLastMessage !== null && newLastMessage !== undefined) {
+    setChats((prev) =>
+      prev.map((c) =>
+        c._id === currentChatRef.current?._id
+          ? { ...c, lastMessage: newLastMessage }
+          : c
+      )
+    );
+  }
+});
+
+socket.on("message-deleted", ({ messageId, newLastMessage }) => {
+    console.log("🗑️ deleted, newLastMessage:", newLastMessage);
+  console.log("🔍 currentChatRef:", currentChatRef.current?._id);
+  setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+
+  setChats((prev) =>
+    prev.map((c) =>
+      c._id === currentChatRef.current?._id
+        ? { ...c, lastMessage: newLastMessage } // ✅ null shows "New conversation"
+        : c
+    )
+  );
+});
+
+socket.on("messages-read", ({ chatId }) => {
+  // ✅ only update if we are in that chat
+  if (currentChatRef.current?._id === chatId) {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.sender?.toString() === myUserId?.toString()
+          ? { ...msg, read: true }
+          : msg
+      )
+    );
+  }
+});
+
 
     return () => {
       socket.off("receive-message");
       socket.off("message-edited");
       socket.off("message-deleted");
+      socket.off("messages-read");
     };
   }, []);
 
+  // Keep ref in sync
+useEffect(() => {
+  currentChatRef.current = currentChat;
+}, [currentChat]);
+
+useEffect(() => {
+  chatsRef.current = chats;
+}, [chats]);
 
   /* =========================
-     FILTER USERS
+     FILTER CHATS OR USERS
      ========================= */
-  const filteredUsers = users.filter((u) =>
-    u.name?.toLowerCase().includes(search.toLowerCase())
+  // Combine chats and users - chats first (with messages), then other users
+  const chatUserIds = new Set(chats.map((c) => c.otherUser?._id));
+  const usersNotInChats = allUsers.filter(
+    (u) => u._id !== myUserId && !chatUserIds.has(u._id)
   );
 
-  /* =========================
-     SELECT USER → CREATE / GET CHAT
-     ========================= */
-  const handleSelectUser = async (user) => {
-    try {
-      setSelectedUser(user);
+  const combinedList = [
+    ...chats,
+    ...usersNotInChats.map((u) => ({
+      _id: u._id,
+      otherUser: u,
+      lastMessage: null,
+    })),
+  ];
 
-      const res = await fetch(
-        "http://localhost:5001/api/chat/create-new-chat",
-        {
-          method: "POST",
+  const filteredItems = combinedList.filter((item) => {
+    const displayUser = item.otherUser || item;
+    return displayUser?.name?.toLowerCase().includes(search.toLowerCase());
+  });
+
+  /* =========================
+     SELECT CHAT OR USER
+     ========================= */
+const handleSelectChat = async (chat) => {
+  try {
+    const otherUserId = chat.otherUser?._id || chat._id;
+
+    setSelectedUser(chat.otherUser || chat);
+
+    // ✅ create/get chat
+    const res = await fetch(
+      "http://localhost:5001/api/chat/create-new-chat",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: otherUserId }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+
+      // ✅ normalize sender ids
+      const normalizedMessages = (data.chat.messages || []).map((msg) => ({
+        ...msg,
+        sender: msg.sender?.toString(),
+      }));
+
+      setCurrentChat(data.chat);
+      setMessages(normalizedMessages);
+
+      // ✅ check unread messages FROM OTHER USER only
+      const hasUnreadMessages = normalizedMessages.some(
+        (msg) =>
+          msg.sender?.toString() !== myUserId?.toString() &&
+          msg.read === false
+      );
+
+      // ✅ ONLY THEN mark as read
+      if (hasUnreadMessages) {
+        await fetch("http://localhost:5001/api/chat/mark-as-read", {
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ userId: user._id }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        setCurrentChat(data.chat);
-        setMessages(data.chat.messages || []);
-
-        // join socket room
-        socket.emit("join-chat", data.chat._id);
+          body: JSON.stringify({ chatId: data.chat._id }),
+        });
       }
-    } catch (err) {
-      console.error("Create chat error:", err);
+
+      // ✅ Add chat in sidebar if not exists
+      setChats((prev) => {
+        const exists = prev.find((c) => c._id === data.chat._id);
+
+        if (exists) return prev;
+
+        return [
+          {
+            _id: data.chat._id,
+            otherUser: chat.otherUser || chat,
+            lastMessage: null,
+          },
+          ...prev,
+        ];
+      });
+
+      // ✅ join socket room
+      socket.emit("join-chat", data.chat._id);
     }
-  };
+  } catch (err) {
+    console.error("Create chat error:", err);
+  }
+};
+
   const handleEditMessage = async (msgId) => {
-    if (!editedText.trim()) return;
+  if (!editedText.trim()) return;
+   console.log("📤 editing:", { chatId: currentChat._id, messageId: msgId, newText: editedText })
+  const newText = editedText; // save before clearing
 
-    await fetch("http://localhost:5001/api/chat/edit-message", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        chatId: currentChat._id,
-        messageId: msgId,
-        newText: editedText,
-      }),
-    });
+  // ✅ Update locally immediately (don't wait for socket)
+  setMessages((prev) =>
+    prev.map((msg) =>
+      msg._id === msgId
+        ? { ...msg, text: newText, edited: true }
+        : msg
+    )
+  );
 
-    setEditingMsgId(null);
-    setEditedText("");
-  };
+  setEditingMsgId(null);
+  setEditedText("");
+
+  await fetch("http://localhost:5001/api/chat/edit-message", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      chatId: currentChat._id,
+      messageId: msgId,
+      newText,
+    }),
+  });
+};
   const handleDeleteMessage = async (msgId) => {
     if (!window.confirm("Are you sure you want to delete this message?")) return;
 
@@ -168,27 +327,42 @@ function Chat() {
   /* =========================
      SEND MESSAGE
      ========================= */
-  const handleSendMessage = async () => {
-    if (!message.trim() || !currentChat) return;
+ const handleSendMessage = async () => {
+  if (!message.trim() || !currentChat) return;
 
-    try {
-      await fetch("http://localhost:5001/api/chat/send-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          chatId: currentChat._id,
-          text: message,
-        }),
-      });
+  try {
+    await fetch("http://localhost:5001/api/chat/send-message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        chatId: currentChat._id,
+        text: message,
+      }),
+    });
 
-      setMessage("");
-    } catch (err) {
-      console.error("Send message error:", err);
-    }
-  };
+    // ✅ move to top + update lastMessage
+    setChats((prev) => {
+      const updated = prev.map((c) =>
+        c._id === currentChat._id
+          ? { ...c, lastMessage: message }
+          : c
+      );
+      const chatIndex = updated.findIndex((c) => c._id === currentChat._id);
+      if (chatIndex > 0) {
+        const [chat] = updated.splice(chatIndex, 1);
+        updated.unshift(chat);
+      }
+      return updated;
+    });
+
+    setMessage("");
+  } catch (err) {
+    console.error("Send message error:", err);
+  }
+};
 
   return (
     <DashboardLayout >
@@ -196,47 +370,66 @@ function Chat() {
         {/* SIDEBAR */}
         <div className="w-80 border-r border-slate-800 bg-slate-900 overflow-y-auto">
           <div className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Contacts</h2>
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              Messages
+            </h2>
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search chats..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full px-3 py-2 bg-slate-800 text-slate-300 placeholder-slate-500 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          {filteredUsers.map((u) => (
-            <div
-              key={u._id}
-              onClick={() => handleSelectUser(u)}
-              className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-slate-800/50 hover:bg-slate-800
-                ${selectedUser?._id === u._id
-                  ? "bg-slate-800 border-l-2 border-l-blue-500 pl-[14px]"
-                  : "border-l-2 border-l-transparent"}`}
-            >
-              <div className="relative">
-                {u?.profileImage ? (
-                  <img
-                    src={u.profileImage}
-                    alt={u.name}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-300 ring-2 ring-slate-700">
-                    {u?.name?.charAt(0)}
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => {
+              const displayUser = item.otherUser || item;
+              const isSelected = selectedUser?._id === displayUser._id;
+              return (
+                <div
+                  key={item._id}
+                  onClick={() => handleSelectChat(item)}
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-slate-800/50 hover:bg-slate-800
+                    ${isSelected
+                      ? "bg-slate-800 border-l-2 border-l-blue-500 pl-[14px]"
+                      : "border-l-2 border-l-transparent"}`}
+                >
+                  <div className="relative">
+                    {displayUser?.profileImage ? (
+                      <img
+                        src={displayUser.profileImage}
+                        alt={displayUser.name}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-300 ring-2 ring-slate-700">
+                        {displayUser?.name?.charAt(0)}
+                      </div>
+                    )}
                   </div>
-                )}
-                {/* Online status indicator can go here */}
-              </div>
 
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium truncate ${selectedUser?._id === u._id ? "text-white" : "text-slate-300"}`}>
-                  {u.name}
-                </p>
-                {/* Last message preview could go here */}
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium truncate ${isSelected ? "text-white" : "text-slate-300"}`}>
+                      {displayUser?.name}
+                    </p>
+                    {item.lastMessage ? (
+                      <p className="text-xs text-slate-500 truncate">
+                        {item.lastMessage}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-600 truncate italic">
+                        New conversation
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-4 text-center text-slate-500 text-sm">
+              No matches found
             </div>
-          ))}
+          )}
         </div>
 
         {/* CHAT AREA */}
@@ -275,7 +468,7 @@ function Chat() {
               {/* MESSAGES */}
               <div className="flex-1 p-6 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 {messages.map((msg) => {
-                  const isMine = msg.sender === myUserId;
+                  const isMine = msg.sender?.toString() === myUserId?.toString();
                   return (
                     <div
                       key={msg._id}
@@ -290,7 +483,7 @@ function Chat() {
                         >
                           {!isMine && (
                             <div className="text-[10px] font-bold opacity-50 mb-1 text-slate-400">
-                              {userMap[msg.sender]}
+                              {selectedUser?.name}
                             </div>
                           )}
 
@@ -325,10 +518,12 @@ function Chat() {
                             </>
                           )}
                         </div>
-
+                       
+                       {isMine && (
                         <div className="text-[10px] text-slate-500 mt-1 px-1">
                           {msg.read ? "Seen" : "Delivered"}
                         </div>
+                       )}
 
                         {/* ACTIONS */}
                         {isMine && editingMsgId !== msg._id && (

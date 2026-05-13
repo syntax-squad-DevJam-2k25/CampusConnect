@@ -7,9 +7,41 @@ const mongoose = require("mongoose");
    ========================= */
 
 
-
 exports.getAllChats = async (req, res) => {
-  res.json({ success: true, message: "getAllChats working" });
+  try {
+    const userId = req.user._id;
+    console.log("👤 userId:", userId);
+
+    const chats = await Chat.find({ members: userId })
+      .populate("members", "name profileImage")
+      .sort({ updatedAt: -1 });
+
+    console.log("💬 chats found:", chats.length);
+
+    const formattedChats = chats.map((chat) => {
+      console.log("🔍 chat.lastMessage:", chat.lastMessage);
+      console.log("🔍 chat.members:", chat.members);
+
+      const otherUser = chat.members.find(
+        (m) => m._id.toString() !== userId.toString()
+      );
+
+      console.log("👥 otherUser:", otherUser);
+
+      return {
+        _id: chat._id,
+        otherUser,
+        lastMessage: chat.lastMessage?.trim() || null,
+        lastMessageTime: chat.updatedAt,
+        unreadCount: 0,
+      };
+    });
+
+    res.json({ success: true, chats: formattedChats });
+  } catch (err) {
+    console.error("🔥 getAllChats ERROR:", err); // full error, not just message
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
 
@@ -108,30 +140,48 @@ exports.sendMessage = async (req, res) => {
    ========================= */
 exports.editMessage = async (req, res) => {
   try {
+    console.log("✏️ editMessage called");
+    console.log("📦 body:", req.body);
+
     const { chatId, messageId, newText } = req.body;
 
-    await Chat.updateOne(
+    const updatedChat = await Chat.findOneAndUpdate(
       { _id: chatId, "messages._id": messageId },
       {
         $set: {
           "messages.$.text": newText,
           "messages.$.edited": true,
         },
-      }
+      },
+      { new: true }
     );
 
-    // 🔥 Emit socket event
+    if (!updatedChat) {
+      return res.status(404).json({ message: "Chat or message not found" });
+    }
+
+    // ✅ check if edited message is the last one
+    const messages = updatedChat.messages;
+    const lastMsg = messages[messages.length - 1];
+    const isLast = lastMsg._id.toString() === messageId.toString();
+
+    if (isLast) {
+      // ✅ update lastMessage field in DB
+      await Chat.findByIdAndUpdate(chatId, {
+        $set: { lastMessage: newText },
+      });
+    }
+
     getIO().to(chatId).emit("message-edited", {
       chatId,
       messageId,
       newText,
+      newLastMessage: isLast ? newText : null,
     });
 
-    res.json({
-      success: true,
-      message: "Message edited",
-    });
+    res.json({ success: true });
   } catch (error) {
+    console.error("editMessage ERROR:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -147,17 +197,59 @@ exports.deleteMessage = async (req, res) => {
       $pull: { messages: { _id: messageId } },
     });
 
-    // 🔥 Emit socket event
+    const updatedChat = await Chat.findById(chatId);
+    const lastMsg = updatedChat.messages[updatedChat.messages.length - 1];
+
+    const newLastMessage = lastMsg
+      ? lastMsg.text || lastMsg.emoji || ""
+      : null; // ✅ null when no messages left, not ""
+
+    await Chat.findByIdAndUpdate(chatId, {
+      $set: { lastMessage: newLastMessage },
+    });
+
     getIO().to(chatId).emit("message-deleted", {
       chatId,
       messageId,
+      newLastMessage, // ✅ will be null when no messages
     });
 
-    res.json({
-      success: true,
-      message: "Message deleted",
-    });
+    res.json({ success: true, message: "Message deleted" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+exports.markAsRead = async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    const userId = req.user._id;
+
+    // ✅ mark all messages as read where sender is NOT me
+    await Chat.updateOne(
+      { _id: chatId },
+      {
+        $set: {
+          "messages.$[elem].read": true,
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "elem.sender": { $ne: userId },
+            "elem.read": false,
+          },
+        ],
+      }
+    );
+
+    // ✅ emit to chat room so sender sees "Seen"
+    getIO().to(chatId).emit("messages-read", { chatId });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 };

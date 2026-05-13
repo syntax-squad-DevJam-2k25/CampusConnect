@@ -1,6 +1,6 @@
 const path = require("path");
 const cloudinary = require("../config/cloudinary");
-const axios = require("axios");
+//const axios = require("axios");
 
 /**
  * Upload a file to Cloudinary and verify its URL.

@@ -47,6 +47,7 @@ export const createComment = async (req, res) => {
       const formattedComment = {
         _id: comment._id,
         text: comment.text,
+          postId: postId, 
         username: comment.userId.name,
         userId: comment.userId._id,
         profileImage: comment.userId.profileImage,
@@ -122,6 +123,7 @@ export const updateComment = async (req, res) => {
       _id: comment._id,
       text: comment.text,
       username: comment.userId.name,
+       postId: comment.postId,
       userId: comment.userId._id,
       createdAt: comment.createdAt,
       replies: comment.replies,
@@ -280,33 +282,39 @@ export const reactToComment = async (req, res) => {
     const comment = await Comment.findById(commentId);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
-    const existing = comment.reactions.find(
-      (r) =>
-        r.userId.toString() === req.user._id.toString() &&
-        r.emoji === emoji
+    const userId = req.user._id.toString();
+
+    // Find if user already reacted with ANY emoji
+    const existingIndex = comment.reactions.findIndex(
+      (r) => r.userId.toString() === userId
     );
 
-    if (existing) {
-      comment.reactions = comment.reactions.filter((r) => r !== existing);
+    if (existingIndex !== -1) {
+      const existingEmoji = comment.reactions[existingIndex].emoji;
+
+      if (existingEmoji === emoji) {
+        // ✅ Same emoji clicked again → REMOVE (toggle off)
+        comment.reactions.splice(existingIndex, 1);
+      } else {
+        // ✅ Different emoji clicked → REPLACE old one
+        comment.reactions[existingIndex].emoji = emoji;
+      }
     } else {
-      comment.reactions.push({
-        userId: req.user._id,
-        emoji,
-      });
+      // ✅ No existing reaction → ADD new one
+      comment.reactions.push({ userId: req.user._id, emoji });
     }
 
     await comment.save();
 
-    res.json({
-      commentId,
-      reactions: comment.reactions,
-    });
-
+    const io = getIO();
     io.to(comment.postId.toString()).emit("reaction_updated", {
       commentId,
       reactions: comment.reactions,
     });
+
+    res.json({ commentId, reactions: comment.reactions });
   } catch (err) {
+    console.error("React to comment error:", err);
     res.status(500).json({ message: err.message });
   }
 };

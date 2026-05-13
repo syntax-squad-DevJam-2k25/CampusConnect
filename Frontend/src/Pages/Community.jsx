@@ -309,6 +309,18 @@ const Community = () => {
       );
     });
 
+    socket.on("reaction_updated", ({ commentId, reactions }) => {
+    setComments((prev) => {
+      const updated = {};
+      for (const postId in prev) {
+        updated[postId] = prev[postId].map((c) =>
+          c._id === commentId ? { ...c, reactions } : c
+        );
+      }
+      return updated;
+    });
+  });
+
     //clean up all listeners on unmount
     return () => {
       socket.off("comment_added");
@@ -318,6 +330,7 @@ const Community = () => {
       socket.off("reply_updated");
       socket.off("reply_deleted");
       socket.off("postLiked");
+      socket.off("reaction_updated");
     };
   }, []);
 
@@ -455,6 +468,26 @@ const Community = () => {
       setEditLoading(false);
     }
   };
+  
+   const handleReact = async (commentId, emoji) => {
+  try {
+    const res = await axios.post(
+      `http://localhost:5001/api/comments/${commentId}/react`,
+      { emoji },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // ✅ Update reactions in state instantly
+    setComments((prev) => ({
+      ...prev,
+      [activeCommentPostId]: prev[activeCommentPostId].map((c) =>
+        c._id === commentId ? { ...c, reactions: res.data.reactions } : c
+      ),
+    }));
+  } catch (err) {
+    toast.error("Failed to react");
+  }
+};
 
   const handleLike = async (postId) => {
     try {
@@ -658,6 +691,28 @@ const Community = () => {
                           <FaReply className="text-xs" />
                           Reply
                         </button>
+                        {/* ✅ ADD THIS — Emoji Reactions */}
+<div className="flex items-center gap-1 flex-wrap mt-1">
+  {["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => {
+    const count = comment.reactions?.filter((r) => r.emoji === emoji).length || 0;
+    const reacted = comment.reactions?.some(
+      (r) => r.emoji === emoji && r.userId === currentUserId
+    );
+    return (
+      <button
+        key={emoji}
+        onClick={() => handleReact(comment._id, emoji)}
+        className={`text-xs px-2 py-0.5 rounded-full transition ${
+          reacted
+            ? "bg-blue-600 text-white"
+            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+        }`}
+      >
+        {emoji} {count > 0 && <span>{count}</span>}
+      </button>
+    );
+  })}
+</div>
                       </div>
                       {replyingTo === comment._id && (
                         <div className="mt-2">

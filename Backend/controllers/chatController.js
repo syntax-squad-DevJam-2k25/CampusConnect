@@ -219,3 +219,37 @@ exports.deleteMessage = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+
+exports.markAsRead = async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    const userId = req.user._id;
+
+    // ✅ mark all messages as read where sender is NOT me
+    await Chat.updateOne(
+      { _id: chatId },
+      {
+        $set: {
+          "messages.$[elem].read": true,
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "elem.sender": { $ne: userId },
+            "elem.read": false,
+          },
+        ],
+      }
+    );
+
+    // ✅ emit to chat room so sender sees "Seen"
+    getIO().to(chatId).emit("messages-read", { chatId });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};

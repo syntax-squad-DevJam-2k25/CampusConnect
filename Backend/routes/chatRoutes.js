@@ -9,6 +9,7 @@ const {
   deleteMessage,
   createNewChat,
   getAllChats,
+  markAsRead,
 
 } = require("../controllers/chatController");
 
@@ -26,6 +27,6 @@ router.post(
 );
 router.put("/edit-message", authMiddleware, editMessage);
 router.delete("/delete-message", authMiddleware, deleteMessage);
-
+router.put("/mark-as-read", authMiddleware, markAsRead);
 
 module.exports = router;

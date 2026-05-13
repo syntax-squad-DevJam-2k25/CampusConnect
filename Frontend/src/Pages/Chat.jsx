@@ -83,16 +83,18 @@ function Chat() {
      ========================= */
   useEffect(() => {
 socket.on("receive-message", (msg) => {
-  setMessages((prev) => [...prev, msg]);
+  setMessages((prev) => [...prev, {
+    ...msg,
+    sender: msg.sender?.toString(), // ✅ convert to string
+    read: false,
+  }]);
 
-  // ✅ move chat to top when new message received
   setChats((prev) => {
     const updated = prev.map((c) =>
       c._id === msg.chatId
         ? { ...c, lastMessage: msg.text || msg.emoji || "" }
         : c
     );
-    // move that chat to top
     const chatIndex = updated.findIndex((c) => c._id === msg.chatId);
     if (chatIndex > 0) {
       const [chat] = updated.splice(chatIndex, 1);
@@ -140,10 +142,25 @@ socket.on("message-deleted", ({ messageId, newLastMessage }) => {
   );
 });
 
+socket.on("messages-read", ({ chatId }) => {
+  // ✅ only update if we are in that chat
+  if (currentChatRef.current?._id === chatId) {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.sender?.toString() === myUserId?.toString()
+          ? { ...msg, read: true }
+          : msg
+      )
+    );
+  }
+});
+
+
     return () => {
       socket.off("receive-message");
       socket.off("message-edited");
       socket.off("message-deleted");
+      socket.off("messages-read");
     };
   }, []);
 
@@ -185,8 +202,10 @@ useEffect(() => {
 const handleSelectChat = async (chat) => {
   try {
     const otherUserId = chat.otherUser?._id || chat._id;
+
     setSelectedUser(chat.otherUser || chat);
 
+    // ✅ create/get chat
     const res = await fetch(
       "http://localhost:5001/api/chat/create-new-chat",
       {
@@ -202,13 +221,41 @@ const handleSelectChat = async (chat) => {
     const data = await res.json();
 
     if (data.success) {
-      setCurrentChat(data.chat);
-      setMessages(data.chat.messages || []);
 
-      // ✅ Add or update chat in sidebar
+      // ✅ normalize sender ids
+      const normalizedMessages = (data.chat.messages || []).map((msg) => ({
+        ...msg,
+        sender: msg.sender?.toString(),
+      }));
+
+      setCurrentChat(data.chat);
+      setMessages(normalizedMessages);
+
+      // ✅ check unread messages FROM OTHER USER only
+      const hasUnreadMessages = normalizedMessages.some(
+        (msg) =>
+          msg.sender?.toString() !== myUserId?.toString() &&
+          msg.read === false
+      );
+
+      // ✅ ONLY THEN mark as read
+      if (hasUnreadMessages) {
+        await fetch("http://localhost:5001/api/chat/mark-as-read", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ chatId: data.chat._id }),
+        });
+      }
+
+      // ✅ Add chat in sidebar if not exists
       setChats((prev) => {
         const exists = prev.find((c) => c._id === data.chat._id);
+
         if (exists) return prev;
+
         return [
           {
             _id: data.chat._id,
@@ -219,6 +266,7 @@ const handleSelectChat = async (chat) => {
         ];
       });
 
+      // ✅ join socket room
       socket.emit("join-chat", data.chat._id);
     }
   } catch (err) {
@@ -420,7 +468,7 @@ const handleSelectChat = async (chat) => {
               {/* MESSAGES */}
               <div className="flex-1 p-6 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 {messages.map((msg) => {
-                  const isMine = msg.sender === myUserId;
+                  const isMine = msg.sender?.toString() === myUserId?.toString();
                   return (
                     <div
                       key={msg._id}
@@ -470,10 +518,12 @@ const handleSelectChat = async (chat) => {
                             </>
                           )}
                         </div>
-
+                       
+                       {isMine && (
                         <div className="text-[10px] text-slate-500 mt-1 px-1">
                           {msg.read ? "Seen" : "Delivered"}
                         </div>
+                       )}
 
                         {/* ACTIONS */}
                         {isMine && editingMsgId !== msg._id && (

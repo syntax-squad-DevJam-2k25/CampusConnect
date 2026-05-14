@@ -19,14 +19,14 @@ exports.getAllChats = async (req, res) => {
     console.log("💬 chats found:", chats.length);
 
     const formattedChats = chats.map((chat) => {
-      console.log("🔍 chat.lastMessage:", chat.lastMessage);
-      console.log("🔍 chat.members:", chat.members);
+      // console.log("🔍 chat.lastMessage:", chat.lastMessage);
+      // console.log("🔍 chat.members:", chat.members);
 
       const otherUser = chat.members.find(
         (m) => m._id.toString() !== userId.toString()
       );
 
-      console.log("👥 otherUser:", otherUser);
+      // console.log("👥 otherUser:", otherUser);
 
       return {
         _id: chat._id,
@@ -79,7 +79,7 @@ exports.createNewChat = async (req, res) => {
    SEND MESSAGE
    ========================= */
 exports.sendMessage = async (req, res) => {
-  console.log("➡️ [CONTROLLER] sendMessage called");
+  // // console.log("➡️ [CONTROLLER] sendMessage called");
 
   try {
     const { chatId, text, emoji } = req.body;
@@ -140,8 +140,8 @@ exports.sendMessage = async (req, res) => {
    ========================= */
 exports.editMessage = async (req, res) => {
   try {
-    console.log("✏️ editMessage called");
-    console.log("📦 body:", req.body);
+    // console.log("✏️ editMessage called");
+    // console.log("📦 body:", req.body);
 
     const { chatId, messageId, newText } = req.body;
 

@@ -30,7 +30,12 @@ export const googleRegister = async (req, res) => {
 
     // 🔍 Check if user exists
     let user = await User.findOne({ email });
-
+    if (user && user.authProvider === "local") {
+      return res.status(400).json({
+        message:
+          "This account uses email/password login. Please login normally."
+      });
+    }
     // 🆕 Create user if new
     if (!user) {
       user = await User.create({
@@ -43,18 +48,27 @@ export const googleRegister = async (req, res) => {
     }
 
     // 🔑 Create JWT
-    const jwtToken = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
+    const accessToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.ACCESS_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.REFRESH_SECRET,
       { expiresIn: "7d" }
     );
 
+    user.refreshToken = refreshToken;
+    await user.save();
+
     return res.status(200).json({
       message: "Google authentication successful",
-      token: jwtToken,
+      token: accessToken,
+      refreshToken: refreshToken,
       user,
     });
-
   } catch (error) {
     console.error("Google auth error:", error);
     return res.status(401).json({

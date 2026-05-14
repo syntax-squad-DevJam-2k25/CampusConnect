@@ -18,21 +18,21 @@ const initSocket = (server) => {
       socket.join(chatId);
     });
 
-    socket.on("send-message", (data) => {
-      io.to(data.chatId).emit("receive-message", data);
-    });
+    // socket.on("send-message", (data) => {
+    //   io.to(data.chatId).emit("receive-message", data);
+    // });
 
-    socket.on("edit-message", ({ chatId, messageId, newText }) => {
-      io.to(chatId).emit("message-edited", {
-        chatId,
-        messageId,
-        newText,
-      });
-    });
+    // socket.on("edit-message", ({ chatId, messageId, newText }) => {
+    //   io.to(chatId).emit("message-edited", {
+    //     chatId,
+    //     messageId,
+    //     newText,
+    //   });
+    // });
 
-    socket.on("delete-chat", ({ chatId }) => {
-      io.to(chatId).emit("chat-deleted", { chatId });
-    });
+    // socket.on("delete-chat", ({ chatId }) => {
+    //   io.to(chatId).emit("chat-deleted", { chatId });
+    // });
 
     /* ===== POSTS / COMMENTS ===== */
     socket.on("join-post", (postId) => {

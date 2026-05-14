@@ -1,9 +1,10 @@
 const router = require("express").Router();
-const { register, login } = require("../controllers/authController");
+const { register, login,refresh,logout } = require("../controllers/authController");
 const { googleRegister } = require("../controllers/googleAuthController");
-
+const authMiddleware = require("../middleware/authMiddleware");
 router.post("/register", register);
 router.post("/login", login);
 router.post("/google-register", googleRegister);
-
+router.post("/refresh",refresh);
+router.post("/logout", authMiddleware, logout);
 module.exports = router;

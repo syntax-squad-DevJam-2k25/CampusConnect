@@ -18,6 +18,8 @@ import {
     useSidebar,
 } from "@/Components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
+import axios from "axios";
+
 
 export function NavUser() {
     const navigate = useNavigate();
@@ -26,10 +28,36 @@ export function NavUser() {
     const user = useSelector((state) => state.user.currentUser);
     const isCollapsed = state === "collapsed";
 
-    const handleLogout = () => {
+
+const handleLogout = async () => {
+    try {
+
+        const token =
+            localStorage.getItem("token");
+
+        await axios.post(
+            "http://localhost:5001/api/auth/logout",
+            {},
+            {
+                headers:{
+                    Authorization:
+                    `Bearer ${token}`
+                }
+            }
+        );
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+
         dispatch(logout());
+
         navigate("/");
-    };
+
+    } catch(error){
+        console.log(error);
+    }
+};
+
 
     const handleProfile = () => {
         navigate("/profile");

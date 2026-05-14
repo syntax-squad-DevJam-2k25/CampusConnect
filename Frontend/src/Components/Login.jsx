@@ -92,8 +92,15 @@ function Login() {
 
       if (response.ok) {
         console.log("✅ Login successful");
-        localStorage.setItem("token", data.token);
-        
+        localStorage.setItem(
+          "token",
+          data.token
+        );
+
+        localStorage.setItem(
+          "refreshToken",
+          data.refreshToken
+        );
         await new Promise(resolve => setTimeout(resolve, 100));
 
         try {
@@ -110,7 +117,7 @@ function Login() {
                 errorMessage: null,
               })
             );
-            
+
             console.log("✅ Redux setUser dispatched successfully");
             toast.success("Login successful!");
             navigate("/home");
@@ -163,7 +170,15 @@ function Login() {
         }
       );
 
-      localStorage.setItem("token", res.data.token);
+      localStorage.setItem(
+        "token",
+        res.data.token
+      );
+
+      localStorage.setItem(
+        "refreshToken",
+        res.data.refreshToken
+      );
 
       dispatch(loginSuccess(res.data.user));
       dispatch(setUser(res.data.user));
@@ -172,7 +187,11 @@ function Login() {
       navigate("/home");
     } catch (error) {
       console.error(error);
-      toast.error("Google authentication failed");
+
+      toast.error(
+        error.response?.data?.message ||
+        "Google authentication failed"
+      );
     }
   };
 

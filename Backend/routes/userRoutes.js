@@ -48,8 +48,6 @@ router.put(
 router.put(
   "/update-leetcode",
   authMiddleware,
-
-
   userController.updateLeetcode
 );
 

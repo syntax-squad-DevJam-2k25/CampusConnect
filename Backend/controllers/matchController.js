@@ -40,7 +40,9 @@ exports.findMatches = async (req, res) => {
         // Optimization: In a real app, query only those who MIGHT match (e.g. have better rating)
         // to avoid fetching the whole DB.
         // For now, fetch all other users but selecting only necessary fields.
-        const users = await User.find({ _id: { $ne: userId } })
+        const users = await User.find({ _id: { $ne: userId },
+                                      codeforcesRating: { $gte: userRating + 100 },
+                                      leetcodeRating: { $gte: userRating + 100 } })
             .select("name email profileImage skills leetcodeRating codeforcesRating branch");
 
         // 3. Run Matching Algorithm

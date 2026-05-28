@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,lazy,Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -6,16 +6,20 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-
-import Home from "./Components/Home.jsx";
-import Login from "./Components/Login.jsx";
-
-import Chat from "./Pages/Chat.jsx";
-import OtherProfile from "./Pages/OtherProfile.jsx";
 import { loginSuccess } from "./redux/userSlice";
-import Profile from "./Pages/Profile.jsx";
-import Community from "./Pages/Community.jsx";
-import ProfileMatching from "./Pages/ProfileMatching.jsx";
+
+const Home = lazy(() => import("./Components/Home.jsx"));
+const Login = lazy(() => import("./Components/Login.jsx"));
+
+const Chat = lazy(() =>import("./Pages/Chat.jsx"));
+
+const Profile = lazy(() =>import("./Pages/Profile.jsx"));
+
+const Community = lazy(() =>import("./Pages/Community.jsx"));
+
+const ProfileMatching = lazy(() =>import("./Pages/ProfileMatching.jsx"));
+
+const OtherProfile = lazy(() =>import("./Pages/OtherProfile.jsx"));
 
 function App() {
   const user = useSelector((state) => state.user.currentUser);
@@ -45,6 +49,7 @@ function App() {
 
   return (
     <Router>
+      <Suspense fallback={<p>Loading...</p>}>
       <Routes>
         {/* AUTH */}
         <Route
@@ -65,16 +70,7 @@ function App() {
         {/* PROFILE FLOW */}
         <Route
           path="/profile"
-          element={
-            user ? (
-              <>
-                {console.log("✅ /profile route rendered")}
-                <Profile />
-              </>
-            ) : (
-              <Navigate to="/" />
-            )
-          }
+          element={ user ? ( <Profile /> ) : ( <Navigate to="/" /> )}
         />
         <Route path="/community" element={user ? <Community /> : <Navigate to="/" />}  ></Route>
         <Route path="/matching" element={user ? <ProfileMatching /> : <Navigate to="/" />}  ></Route>
@@ -84,6 +80,7 @@ function App() {
           element={user ? <OtherProfile /> : <Navigate to="/" />}
         />
       </Routes>
+     </Suspense>
     </Router>
   );
 }

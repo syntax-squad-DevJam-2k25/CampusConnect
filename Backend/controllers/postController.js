@@ -1,7 +1,7 @@
 import { getIO } from "../config/socket.js";
 import Post from "../models/Post.js";
 import Comment from "../models/Comment.js";
-import { checkPostSafety } from "../util/aiModeration.js";
+import { checkPostSafety } from "../utils/aiModeration.js";
 import uploadToCloudinary from "../utils/cloudinaryUpload.js";
 
 

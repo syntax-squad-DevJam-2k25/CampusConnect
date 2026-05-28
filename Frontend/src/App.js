@@ -6,10 +6,10 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import { loginSuccess } from "./redux/userSlice";
 
-const Home =  import("./Components/Home.jsx");
-
-const Login =  import("./Components/Login.jsx");
+const Home = lazy(() => import("./Components/Home.jsx"));
+const Login = lazy(() => import("./Components/Login.jsx"));
 
 const Chat = lazy(() =>import("./Pages/Chat.jsx"));
 

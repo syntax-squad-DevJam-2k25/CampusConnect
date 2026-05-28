@@ -10,13 +10,13 @@ const mongoose = require("mongoose");
 exports.getAllChats = async (req, res) => {
   try {
     const userId = req.user._id;
-    console.log("👤 userId:", userId);
+   // console.log("👤 userId:", userId);
 
     const chats = await Chat.find({ members: userId })
       .populate("members", "name profileImage")
       .sort({ updatedAt: -1 });
 
-    console.log("💬 chats found:", chats.length);
+   // console.log("💬 chats found:", chats.length);
 
     const formattedChats = chats.map((chat) => {
       // console.log("🔍 chat.lastMessage:", chat.lastMessage);
@@ -84,11 +84,11 @@ exports.sendMessage = async (req, res) => {
   try {
     const { chatId, text, emoji } = req.body;
 
-    console.log("📦 Incoming:", { chatId, text, emoji });
-    console.log("👤 Sender:", req.user?._id);
+    //console.log("📦 Incoming:", { chatId, text, emoji });
+    //console.log("👤 Sender:", req.user?._id);
 
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
-      console.log("❌ Invalid chatId");
+     // console.log("❌ Invalid chatId");
       return res.status(400).json({ message: "Invalid chatId" });
     }
 
@@ -112,13 +112,13 @@ exports.sendMessage = async (req, res) => {
     );
 
     if (!updatedChat) {
-      console.log("❌ Chat NOT FOUND:", chatId);
+     // console.log("❌ Chat NOT FOUND:", chatId);
       return res.status(404).json({ message: "Chat not found" });
     }
 
-    console.log("✅ Chat found:", updatedChat._id);
-    console.log("✅ Messages length:", updatedChat.messages.length);
-    console.log("✅ Last message:", updatedChat.messages.at(-1));
+    //console.log("✅ Chat found:", updatedChat._id);
+    //console.log("✅ Messages length:", updatedChat.messages.length);
+    ///console.log("✅ Last message:", updatedChat.messages.at(-1));
 
     getIO().to(chatId).emit("receive-message", {
       chatId,
@@ -144,6 +144,26 @@ exports.editMessage = async (req, res) => {
     // console.log("📦 body:", req.body);
 
     const { chatId, messageId, newText } = req.body;
+
+    const userId = req.user._id; // ✅ get current user
+
+    // ✅ Find chat first
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    // ✅ Find the message
+    const message = chat.messages.id(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // ✅ Check ownership
+    if (message.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "You can only edit your own messages" });
+    }
+
 
     const updatedChat = await Chat.findOneAndUpdate(
       { _id: chatId, "messages._id": messageId },
@@ -192,7 +212,24 @@ exports.editMessage = async (req, res) => {
 exports.deleteMessage = async (req, res) => {
   try {
     const { chatId, messageId } = req.body;
+    const userId = req.user._id; // ✅ get current user
 
+    // ✅ Find chat first
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    // ✅ Find the message
+    const message = chat.messages.id(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // ✅ Check ownership
+    if (message.sender.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "You can only delete your own messages" });
+    }
     await Chat.findByIdAndUpdate(chatId, {
       $pull: { messages: { _id: messageId } },
     });

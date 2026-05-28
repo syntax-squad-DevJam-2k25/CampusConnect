@@ -6,10 +6,10 @@ const User = require("../models/User");
  * Step 1 & 2: Calculate Cosine Similarity for Tags
  */
 const calculateTagSimilarity = (userTags, mentorTags) => {
-    if (!userTags || !mentorTags) return 0;
+ if (!userTags?.length || !mentorTags?.length) return 0;
     // Normalize to lower case for comparison
-    const uTags = userTags.map(t => t.toLowerCase());
-    const mTags = mentorTags.map(t => t.toLowerCase());
+     const uTags = userTags.map(t => String(t).toLowerCase());
+    const mTags = mentorTags.map(t => String(t).toLowerCase());
 
     const allTags = Array.from(new Set([...uTags, ...mTags]));
 
@@ -40,14 +40,13 @@ exports.findMatches = async (req, res) => {
         // Optimization: In a real app, query only those who MIGHT match (e.g. have better rating)
         // to avoid fetching the whole DB.
         // For now, fetch all other users but selecting only necessary fields.
-        const users = await User.find({ _id: { $ne: userId },
-                                      codeforcesRating: { $gte: userRating + 100 },
-                                      leetcodeRating: { $gte: userRating + 100 } })
-            .select("name email profileImage skills leetcodeRating codeforcesRating branch");
+        const users = await User.find({ _id: { $ne: userId } })
+    .select("name email profileImage skills leetcodeRating codeforcesRating branch");
 
         // 3. Run Matching Algorithm
         const matches = users.map(mentor => {
             // Initial Data Prep
+            try{
             const userTags = currentUser.skills || [];
             const mentorTags = mentor.skills || [];
             const mentorCF = mentor.codeforcesRating || 0;
@@ -66,9 +65,10 @@ exports.findMatches = async (req, res) => {
             const cfDiff = mentorCF - userCF;
             const lcDiff = mentorLC - userLC;
 
-            if (cfDiff < 100 && lcDiff < 100) {
-                return null; // Reject
-            }
+            const hasRatingData = (mentorCF > 0 || mentorLC > 0) && (userCF > 0 || userLC > 0);
+if (hasRatingData && cfDiff < 100 && lcDiff < 100) {
+    return null;
+}
 
             // Step 4: Supporting Scores
             const maxGap = 500;
@@ -108,6 +108,10 @@ exports.findMatches = async (req, res) => {
                 matchPercentage: Math.round(finalScore * 100),
                 score: finalScore
             };
+        }         catch (err) {
+            console.error("Error processing mentor:", mentor._id, err.message);
+            return null;
+        }
         })
             .filter(m => m !== null) // Remove rejected matches
             .sort((a, b) => b.score - a.score); // Step 6: Sort Descending

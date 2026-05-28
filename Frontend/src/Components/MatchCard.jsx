@@ -1,43 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/Components/ui/avatar";
-import { Button } from "@/Components/ui/button";
-import { MessageSquare, UserPlus, TrendingUp, Code2, Check, Clock } from "lucide-react";
+import { TrendingUp, Code2 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
 const MatchCard = ({ user }) => {
     const navigate = useNavigate();
-    const [status, setStatus] = useState(user.connectionStatus || 'none'); // none, pending, connected
-    const [loading, setLoading] = useState(false);
-
-    const handleConnect = async (e) => {
-        e.stopPropagation();
-        setLoading(true);
-        try {
-            const token = localStorage.getItem("token");
-            const res = await fetch("http://localhost:5001/api/connections/send", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ receiverId: user.id })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                setStatus('pending');
-                toast.success("Connection request sent!");
-            } else {
-                toast.error(data.message || "Failed to send request");
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Error sending request");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // Use default cartoon avatar if no profile pic
     const avatarSrc = user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`;
@@ -129,42 +96,7 @@ const MatchCard = ({ user }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-auto">
-                    {status === 'pending' ? (
-                        <Button className="flex-1 bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed" disabled>
-                            <Clock className="h-4 w-4 mr-2" />
-                            Pending
-                        </Button>
-                    ) : status === 'accepted' || status === 'connected' ? (
-                        <Button className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-default">
-                            <Check className="h-4 w-4 mr-2" />
-                            Connected
-                        </Button>
-                    ) : (
-                        <Button
-                            className="flex-1 bg-white text-slate-900 hover:bg-slate-200"
-                            onClick={handleConnect}
-                            disabled={loading}
-                        >
-                            {loading ? <Clock className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                            Connect
-                        </Button>
-                    )}
-
-                    <Button
-                        variant="secondary"
-                        size="icon"
-                        className="bg-slate-800 text-white hover:bg-slate-700 border border-slate-700"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            navigate('/chat');
-                        }}
-                    >
-                        <MessageSquare className="h-4 w-4" />
-                    </Button>
-                </div>
+                
             </div>
         </div>
     );

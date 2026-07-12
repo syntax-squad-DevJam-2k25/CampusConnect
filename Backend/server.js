@@ -37,7 +37,6 @@ app.use("/api/codeforces", codeforcesRoutes);
 app.use("/api/community", postRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/matches", require("./routes/matchRoutes"));
-app.use("/api/connections", require("./routes/connectionRoutes"));
 
 /* DB */
 mongoose

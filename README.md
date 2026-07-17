@@ -6,12 +6,11 @@ A full-stack social networking platform for college students where they can conn
 
 <p align="center">
 
-![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![React](https://img.shields.io/badge/React-blue?logo=react)
 ![Node.js](https://img.shields.io/badge/Node.js-Express-green?logo=node.js)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?logo=mongodb)
 ![Socket.io](https://img.shields.io/badge/Socket.io-RealTime-black?logo=socket.io)
 ![JWT](https://img.shields.io/badge/Auth-JWT-orange)
-![License](https://img.shields.io/badge/License-MIT-blue)
 
 </p>
 
@@ -42,7 +41,6 @@ A full-stack social networking platform for college students where they can conn
 
 ###  Posts
 - Create Posts
-- Edit Posts
 - Delete Posts
 - Like & Unlike Posts
 - Comment on Posts
@@ -55,11 +53,9 @@ A full-stack social networking platform for college students where they can conn
 - Real-Time Messaging
 - Read Receipts
 - Edit Messages
-- Emoji Support
-- File Sharing
+- Delete Mesages
 
 ###  Social Features
-- Follow & Unfollow Users
 - User Profiles
 - Coding Profile Integration
 - Suggested Connections
@@ -294,30 +290,54 @@ REACT_APP_SOCKET_URL=http://localhost:5000
 
 ---
 
-# 📷 Screenshots
+#Screenshots
 
-Add your screenshots here.
+##  Home Page
 
-```
-screenshots/
-│── Home.png
-│── Login.png
-│── Feed.png
-│── Chat.png
-│── Profile.png
-```
-
-Example
-
-```markdown
-## Home
-
-![Home](screenshots/Home.png)
-
-## Chat
-
-![Chat](screenshots/Chat.png)
-```
+<p align="center">
+  <img src="Screenshots/dashboard.jpeg" alt="Home Page" width="900"/>
+</p>
 
 ---
+
+##  Real-Time Chat
+
+<p align="center">
+  <img src="Screenshots/chat.jpeg" alt="Chat" width="900"/>
+</p>
+
+---
+
+##  Community Page
+
+<p align="center">
+  <img src="Screenshots/community.jpeg" alt="Community" width="900"/>
+</p>
+
+---
+
+##  User Profile
+
+<p align="center">
+  <img src="Screenshots/profile.jpeg" alt="Profile" width="900"/>
+</p>
+
+---
+
+##  Student Match
+
+<p align="center">
+  <img src="Screenshots/matchprofile.jpeg" alt="Student Match" width="900"/>
+</p>
+
+---
+
+##  Comments
+
+<p align="center">
+  <img src="Screenshots/comment.png" alt="Comments" width="900"/>
+</p>
+
+---
+
 

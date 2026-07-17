@@ -1,60 +1,323 @@
-<a href="https://weekendofcode.computercodingclub.in/"> <img src="https://i.postimg.cc/njCM24kx/woc.jpg" height=30px> </a>
+# <h1 align="center">🎓 Campus Connect</h1>
 
+<p align="center">
+A full-stack social networking platform for college students where they can connect, chat in real time, share posts, discover coding profiles, and build meaningful academic relationships.
+</p>
 
-# CampusConnect
+<p align="center">
 
-This project is a college networking website designed to bridge the gap between freshers and seniors, fostering mentorship and collaboration within the college community.
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![Node.js](https://img.shields.io/badge/Node.js-Express-green?logo=node.js)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?logo=mongodb)
+![Socket.io](https://img.shields.io/badge/Socket.io-RealTime-black?logo=socket.io)
+![JWT](https://img.shields.io/badge/Auth-JWT-orange)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
-## Features
+</p>
 
-- real-time communication 
-- dynamic system to fetch and display detailed
-profiles of students,
-- secure sign up and login functionalities to ensure a safe and personalized user experience.
+---
 
+#  Table of Contents
 
-## Technologies Used
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Folder Structure](#-folder-structure)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [API Modules](#-api-modules)
+- [Screenshots](#-screenshots)
+- [Future Improvements](#-future-improvements)
+- [Author](#-author)
 
-- Frontend
-    - Reactjs
-- Backend
-    - Nodejs
-    - Expressjs
-    - MongoDB
-    - GraphQL
-## Screenshots :
+---
 
-* Coding Portfolios
-  
-  ![profile](https://github.com/user-attachments/assets/efd428c0-29b9-41de-9d7d-0a8fb9ec67ae)
+# Features
 
-* Dashboard
+###  Authentication
+- User Registration & Login
+- Google Authentication
+- JWT Authentication
+- Protected Routes
+- Password Encryption using bcrypt
 
- ![home](https://github.com/user-attachments/assets/d5d9df33-a731-4d0b-a9dd-49c5f528e560)
+###  Posts
+- Create Posts
+- Edit Posts
+- Delete Posts
+- Like & Unlike Posts
+- Comment on Posts
+- Reply to Comments
+- Image Upload using Cloudinary
 
-* Chat 
+### Real-Time Chat
+- One-to-One Chat
+- Socket.IO Integration
+- Real-Time Messaging
+- Read Receipts
+- Edit Messages
+- Emoji Support
+- File Sharing
 
-  ![chat](https://github.com/user-attachments/assets/742830c1-5c22-49ae-a674-35dba5d6cacf)
+###  Social Features
+- Follow & Unfollow Users
+- User Profiles
+- Coding Profile Integration
+- Suggested Connections
 
-## Contributors:
+###  AI Moderation
+- Detect Harmful Content
+- Prevent Offensive Posts
+- AI-powered Content Moderation
 
-Team Name: syntax_squad
+---
 
-* [Neelendra pratap](https://github.com/ultimatrix2)
-* [Kamani Kumari](https://github.com/Kamani-Kumari)
-* [Mayank Agrawal](https://github.com/amayank18)
-* [Anshika Kesari](https://github.com/02-Anshika)
+#  Tech Stack
 
-## Future Scope : 
-* Integrate WebRTC-based real-time video calling for seamless peer-to-peer communication.
+## Frontend
 
-*  interactive heatmaps to visualize user activity and skill progression.
+- React.js
+- Redux Toolkit
+- Tailwind CSS
+- Axios
+- Socket.io Client
+- React Router DOM
 
-* Develop a recommendation system to suggest content and connections based on profile domains like ML, DSA, and Web Development.
+## Backend
 
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT
+- bcrypt.js
+- Socket.io
+- Multer
+- Cloudinary
 
-### Made at:
+---
 
+#  Folder Structure
 
+```text
+CampusConnect
+├── Backend
+│   ├── config
+│   │   ├── cloudinary.js
+│   │   ├── multer.js
+│   │   └── socket.js
+│   │
+│   ├── controllers
+│   │   ├── platformController/
+│   │   ├── authController.js
+│   │   ├── chatController.js
+│   │   ├── commentController.js
+│   │   ├── googleAuthController.js
+│   │   ├── matchController.js
+│   │   ├── postController.js
+│   │   └── userController.js
+│   │
+│   ├── middleware
+│   │   ├── authMiddleware.js
+│   │   └── upload.middleware.js
+│   │
+│   ├── models
+│   │   ├── chat.js
+│   │   ├── Comment.js
+│   │   ├── Post.js
+│   │   └── User.js
+│   │
+│   ├── routes
+│   │   ├── authRoutes.js
+│   │   ├── chatRoutes.js
+│   │   ├── commentRoutes.js
+│   │   ├── matchRoutes.js
+│   │   ├── postRoutes.js
+│   │   ├── routeCodeforces.js
+│   │   └── userRoutes.js
+│   │
+│   ├── utils
+│   │   ├── aiModeration.js
+│   │   └── cloudinaryUpload.js
+│   │
+│   ├── .env
+│   ├── package.json
+│   └── server.js
+│
+├── Frontend
+│   ├── public
+│   │
+│   ├── src
+│   │   ├── Assets
+│   │   ├── chatApiCalls
+│   │   ├── Components
+│   │   ├── lib
+│   │   ├── Pages
+│   │   ├── redux
+│   │   ├── utils
+│   │   ├── App.js
+│   │   ├── chartSetup.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   ├── reportWebVitals.js
+│   │   ├── setupTests.js
+│   │   └── socket.js
+│   │
+│   ├── .env
+│   ├── package.json
+│   ├── craco.config.js
+│   ├── tailwind.config.js
+│   └── postcss.config.js
+│
+└── README.md
+```
 
-<a href="https://weekendofcode.computercodingclub.in/"> <img src="https://i.postimg.cc/Z9fC676j/devjam.jpg" height=30px> </a>
+---
+
+#  Getting Started
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/CampusConnect.git
+```
+
+```bash
+cd CampusConnect
+```
+
+---
+
+## 2. Backend Setup
+
+```bash
+cd Backend
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Run backend
+
+```bash
+npm start
+```
+
+---
+
+## 3. Frontend Setup
+
+```bash
+cd Frontend
+```
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Run frontend
+
+```bash
+npm start
+```
+
+---
+
+#  Environment Variables
+
+## Backend (.env)
+
+```env
+PORT=5000
+
+MONGODB_URI=YOUR_MONGODB_URI
+
+JWT_SECRET=YOUR_SECRET_KEY
+
+CLOUDINARY_CLOUD_NAME=
+
+CLOUDINARY_API_KEY=
+
+CLOUDINARY_API_SECRET=
+
+GOOGLE_CLIENT_ID=
+
+GOOGLE_CLIENT_SECRET=
+```
+
+---
+
+## Frontend (.env)
+
+```env
+REACT_APP_API_URL=http://localhost:5000
+
+REACT_APP_SOCKET_URL=http://localhost:5000
+```
+
+---
+
+#  API Modules
+
+### Authentication
+
+- Register
+- Login
+- Google Login
+- JWT Verification
+
+### Users
+
+- Profile
+- Follow / Unfollow
+- Search Users
+
+### Posts
+
+- Create
+- Edit
+- Delete
+- Like
+- Comment
+
+### Chat
+
+- Create Chat
+- Send Message
+- Edit Message
+- Read Messages
+- Upload Files
+
+---
+
+# 📷 Screenshots
+
+Add your screenshots here.
+
+```
+screenshots/
+│── Home.png
+│── Login.png
+│── Feed.png
+│── Chat.png
+│── Profile.png
+```
+
+Example
+
+```markdown
+## Home
+
+![Home](screenshots/Home.png)
+
+## Chat
+
+![Chat](screenshots/Chat.png)
+```
+
+---
+
